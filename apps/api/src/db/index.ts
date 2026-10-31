@@ -4,5 +4,4 @@ import { env } from '../env.js';
 import * as schema from './schema.js';
 
 export const pool = new pg.Pool({ connectionString: env.databaseUrl });
-
 export const db = drizzle(pool, { schema });

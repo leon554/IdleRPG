@@ -6,17 +6,11 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:api": "docker compose up --build",
+    "dev:api": "docker compose up --build --renew-anon-volumes",
     "dev:mobile": "npm run start -w apps/mobile",
     "down": "docker compose down",
     "db:generate": "docker compose exec api npm run db:generate -w apps/api",
     "db:migrate": "docker compose exec api npm run db:migrate -w apps/api",
     "db:push": "docker compose exec api npm run db:push -w apps/api"
-  },
-  "dependencies": {
-    "bcrypt": "^6.0.0"
-  },
-  "devDependencies": {
-    "@types/bcrypt": "^6.0.0"
   }
 }

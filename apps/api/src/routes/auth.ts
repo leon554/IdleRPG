@@ -1,6 +1,6 @@
 import type { SignUpBody } from "@idlerpg/shared";
 import { Router } from "express";
-import { validate } from "../validation/validate.js";
+import { validate, withBody } from "../validation/validate.js";
 import { signUpSchema } from "../validation/schemas.js";
 import { hashPassword } from "../util/password.js";
 import { generateSessionToken, hashSessionToken } from "../util/sessionToken.js";
@@ -12,10 +12,7 @@ import { isUniqueViolation } from "../errorHandler.js";
 
 export const authRouter = Router()
 
-authRouter.post("/signup", async (req, res) => {
-    const data = validate(signUpSchema, req.body)
-    if (!data) return res.status(400).json({ error: "invalid_input" });
-
+authRouter.post("/signup", withBody(signUpSchema, async (data, req, res) => {
     const passwordHash = await hashPassword(data.password);
     const sessionToken = generateSessionToken();
     const emailCode = generateEmailCode();
@@ -53,4 +50,4 @@ authRouter.post("/signup", async (req, res) => {
     console.log(emailCode)
 
     return res.status(201).json({ token: sessionToken });
-})
+}))

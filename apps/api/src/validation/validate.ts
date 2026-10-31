@@ -1,3 +1,6 @@
+import type { Request, Response, RequestHandler } from "express";
+
+
 
 export type Validator<T> = ((value: unknown) => T | undefined) & { optional?: boolean };
 export type Schema = Record<string, Validator<unknown>>;
@@ -30,4 +33,17 @@ export function validate<S extends Schema>(schema: S, body: unknown): Infer<S> |
     }
 
     return out as Infer<S>;
+}
+
+export function withBody<S extends Schema>(schema: S, handler: (body: Infer<S>, req: Request, res: Response) => unknown): RequestHandler {
+    return async (req, res, next) => {
+        const body = validate(schema, req.body);
+        if (!body) return res.status(400).json({ error: "invalid_input" });
+    
+        try {
+            await handler(body, req, res);
+        } catch (err) {
+            next(err);
+        }
+    };
 }

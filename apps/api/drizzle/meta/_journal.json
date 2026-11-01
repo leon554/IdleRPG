@@ -8,6 +8,20 @@
       "when": 1793351329648,
       "tag": "0000_windy_ghost_rider",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793508407553,
+      "tag": "0001_misty_iron_fist",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793509505659,
+      "tag": "0002_short_may_parker",
+      "breakpoints": true
     }
   ]
 }

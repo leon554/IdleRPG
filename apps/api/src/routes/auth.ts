@@ -9,7 +9,7 @@ import { db } from "../db/index.js";
 import { emailVerification, session, users } from "../db/schema.js";
 import { EMAIL_CODE_EXPIRATION, EmailVerificationPurpose, MAX_EMAIL_CODE_ATTEMPS, SESSION_EXPIRATION } from "../constants.js";
 import { isUniqueViolation } from "../errorHandler.js";
-import { and, desc, eq, isNull, gt, sql} from "drizzle-orm";
+import { and, desc, eq, lte, gt, sql} from "drizzle-orm";
 import { getAuthUser, requireAuth } from "../middleware/requireAuth.js";
 import { emailIpRateLimiter, emailUserRateLimiter, loginRateLimiter, signUpRateLimiter } from "../util/routeRateLimits.js";
 
@@ -131,6 +131,11 @@ authRouter.post("/login", loginRateLimiter, withBody(loginSchema, async (data, r
         expiresAt: new Date(Date.now() + SESSION_EXPIRATION),
         deviceInfo: "",
     });
+    await db
+        .delete(session)
+        .where(and(eq(session.userId, user.id), lte(session.expiresAt, new Date())))
+        .returning({ id: session.id });
+
 
     return res.status(200).json({ token: sessionToken });
 }));

@@ -23,3 +23,15 @@ export type StringValidationParams = {
   trim?: boolean; 
   lowerCase?: boolean;
 };
+
+export type AuthUser = {
+  id: string;
+  emailVerifiedAt: Date | null;
+};
+
+export type AuthRow = {
+    sessionId: string;
+    expiresAt: Date;
+    id: string;
+    emailVerifiedAt: Date | null;
+}

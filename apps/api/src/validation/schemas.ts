@@ -10,3 +10,9 @@ export const signUpSchema = {
 export const emailVerificationSchema = {
     emailCode: str({minLength: 0, maxLength: 7}),
 } satisfies Schema
+
+
+export const loginSchema = {
+    email,
+    password: str({ minLength: 8, maxLength: 128, trim: false }),
+} satisfies Schema

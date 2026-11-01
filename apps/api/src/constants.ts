@@ -15,5 +15,6 @@ export const DEFUALT_RATELIMIT_MAXREQUEST = 5
 
 export const RATE_LIMITS = {
     emailRateLimit: {windowMS: DEFUALT_RATELIMIT_WINDOW, maxRequests: DEFUALT_RATELIMIT_MAXREQUEST},
-    signupRateLimit: {windowMS: 1000 * 60 * 60, maxRequests: 10}
+    signupRateLimit: {windowMS: 1000 * 60 * 60, maxRequests: 10},
+    loginRateLimit: {windowMS: 1000 * 60 * 60, maxRequests: 10}
 } satisfies Record<any, Omit<RateLimitOption, "key">>

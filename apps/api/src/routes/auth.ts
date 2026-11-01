@@ -1,8 +1,8 @@
 import type { SignUpBody } from "@idlerpg/shared";
 import { Router } from "express";
 import { validate, withBody } from "../validation/validate.js";
-import { emailVerificationSchema, signUpSchema } from "../validation/schemas.js";
-import { hashPassword } from "../util/password.js";
+import { emailVerificationSchema, loginSchema, signUpSchema } from "../validation/schemas.js";
+import { hashPassword, verifyPassword } from "../util/password.js";
 import { generateSessionToken, hashSessionToken } from "../util/sessionToken.js";
 import { emailCodesMatch, generateEmailCode, hashEmailCode } from "../util/emailCode.js";
 import { db } from "../db/index.js";
@@ -11,11 +11,11 @@ import { EMAIL_CODE_EXPIRATION, EmailVerificationPurpose, MAX_EMAIL_CODE_ATTEMPS
 import { isUniqueViolation } from "../errorHandler.js";
 import { and, desc, eq, isNull, gt, sql} from "drizzle-orm";
 import { getAuthUser, requireAuth } from "../middleware/requireAuth.js";
-import { emailIpRateLimiter, emailUserRateLimiter, signUpRateLimiter } from "../util/routeRateLimits.js";
+import { emailIpRateLimiter, emailUserRateLimiter, loginRateLimiter, signUpRateLimiter } from "../util/routeRateLimits.js";
 
 export const authRouter = Router()
 
-authRouter.post("/signup",signUpRateLimiter ,withBody(signUpSchema, async (data, req, res) => {
+authRouter.post("/signup", signUpRateLimiter, withBody(signUpSchema, async (data, _, res) => {
     const passwordHash = await hashPassword(data.password);
     const sessionToken = generateSessionToken();
     const emailCode = generateEmailCode();
@@ -55,7 +55,6 @@ authRouter.post("/signup",signUpRateLimiter ,withBody(signUpSchema, async (data,
     return res.status(201).json({ token: sessionToken });
 }))
 
-
 authRouter.post("/verify-email-code", 
     emailIpRateLimiter, 
     requireAuth, 
@@ -80,7 +79,7 @@ authRouter.post("/verify-email-code",
     if(!latestCode){
         return res.status(404).json({ error: "wrong code" });
     }
-    
+
     if(latestCode.attempts >= MAX_EMAIL_CODE_ATTEMPS){
         return res.status(429).json({ error: "too_many_attempts" });
     }
@@ -108,3 +107,30 @@ authRouter.post("/verify-email-code",
     return res.status(404).json({ error: "wrong code" });
     
 }))
+
+const DUMMY_HASH = await hashPassword("timing-safety-placeholder");
+
+authRouter.post("/login", loginRateLimiter, withBody(loginSchema, async (data, req, res) => {
+    const [user] = await db
+        .select({ id: users.id, passwordHash: users.passwordHash })
+        .from(users)
+        .where(eq(users.email, data.email))
+        .limit(1);
+
+    const passwordOk = await verifyPassword(data.password, user?.passwordHash ?? DUMMY_HASH);
+
+    if (!user || !passwordOk) {
+        return res.status(401).json({ error: "invalid_credentials" });
+    }
+
+    const sessionToken = generateSessionToken();
+
+    await db.insert(session).values({
+        userId: user.id,
+        sessionHash: hashSessionToken(sessionToken),
+        expiresAt: new Date(Date.now() + SESSION_EXPIRATION),
+        deviceInfo: "",
+    });
+
+    return res.status(200).json({ token: sessionToken });
+}));

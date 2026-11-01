@@ -13,3 +13,8 @@ export const emailUserRateLimiter = rateLimit({...RATE_LIMITS.emailRateLimit, ke
 export const signUpRateLimiter = rateLimit({...RATE_LIMITS.signupRateLimit, key: (req, _) => {
     return `${req.ip}`
 }})
+
+export const loginRateLimiter = rateLimit({...RATE_LIMITS.loginRateLimit, key: (req, _) => {
+    return `${req.ip}`
+}})
+

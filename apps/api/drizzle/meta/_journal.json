@@ -22,6 +22,13 @@
       "when": 1793509505659,
       "tag": "0002_short_may_parker",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793582077176,
+      "tag": "0003_cynical_rumiko_fujikawa",
+      "breakpoints": true
     }
   ]
 }

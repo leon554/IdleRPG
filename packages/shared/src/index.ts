@@ -1,3 +1,5 @@
+export * from "./gameData.js"
+
 export type HealthResponse = {
     status: 'ok' | 'error';
     db: 'up' | 'down';

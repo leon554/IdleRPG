@@ -11,6 +11,7 @@
     "down": "docker compose down",
     "db:generate": "docker compose exec api npm run db:generate -w apps/api",
     "db:migrate": "docker compose exec api npm run db:migrate -w apps/api",
-    "db:push": "docker compose exec api npm run db:push -w apps/api"
+    "db:push": "docker compose exec api npm run db:push -w apps/api",
+    "db:seed": "docker compose exec api npm run db:seed -w apps/api"
   }
 }

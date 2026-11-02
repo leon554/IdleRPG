@@ -58,7 +58,7 @@ export const emailVerification = pgTable(
 export const categories = pgTable(
   "categories",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text().primaryKey(),
     name: text().notNull(),
     type: text().notNull(),
     xpRate: integer().notNull(),
@@ -72,7 +72,7 @@ export const categories = pgTable(
 export const rarity = pgTable(
   "rarity",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text().primaryKey(),
     name: text().notNull(),
     tier: integer().notNull(),
     color: text().notNull(),
@@ -89,8 +89,8 @@ export const rarity = pgTable(
 export const resources = pgTable(
   "resources",
   {
-    id: uuid().primaryKey().defaultRandom(),
-    categoryId: uuid().notNull().references(() => categories.id, { onDelete: "restrict" }),
+    id: text().primaryKey(),
+    categoryId: text().notNull().references(() => categories.id, { onDelete: "restrict" }),
     itemName: text().notNull(),
     levelRequirement: integer().notNull().default(1),
     progressRequirement: integer().notNull().default(0),
@@ -113,24 +113,37 @@ export const resources = pgTable(
 export const equipment = pgTable(
   "equipment",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text().primaryKey(),
     name: text().notNull(),
     // NULL = universal, fits any category's slots
-    categoryId: uuid().references(() => categories.id, { onDelete: "restrict" }),
+    categoryId: text().references(() => categories.id, { onDelete: "restrict" }),
+    typeId: text().references(() => equipmentType.id, { onDelete: "restrict" }),
     vendorPrice: bigint({ mode: "number" }).notNull().default(0),
   },
   (t) => [
     unique("equipment_name_unique").on(t.name),
     check("equipment_vendorPrice_check", sql`${t.vendorPrice} >= 0`),
     index("equipment_categoryId_index").on(t.categoryId),
+    index("equipment_typeId_index").on(t.typeId),
+  ],
+);
+
+export const equipmentType = pgTable(
+  "equipmentType",
+  {
+    id: text().primaryKey(),
+    type: text().notNull(),
+  },
+  (t) => [
+    unique("equipment_type_unique").on(t.type),
   ],
 );
 
 export const equipmentStats = pgTable(
   "equipmentStats",
   {
-    equipmentId: uuid().notNull().references(() => equipment.id, { onDelete: "cascade" }),
-    rarityId: uuid().notNull().references(() => rarity.id, { onDelete: "restrict" }),
+    equipmentId: text().notNull().references(() => equipment.id, { onDelete: "cascade" }),
+    rarityId: text().notNull().references(() => rarity.id, { onDelete: "restrict" }),
     progress: doublePrecision().notNull().default(0),
     quality: doublePrecision().notNull().default(0),
     yield: doublePrecision().notNull().default(0),
@@ -142,17 +155,21 @@ export const equipmentStats = pgTable(
 export const slots = pgTable(
   "slots",
   {
-    id: uuid().primaryKey().defaultRandom(),
-    categoryId: uuid().notNull().references(() => categories.id, { onDelete: "restrict" }),
+    id: text().primaryKey(),
+    categoryId: text().notNull().references(() => categories.id, { onDelete: "restrict" }),
+    equipmentTypeId: text().references(() => equipmentType.id, { onDelete: "restrict" }),
     name: text().notNull(),
   },
-  (t) => [unique("slots_category_name_unique").on(t.categoryId, t.name)],
+  (t) => [
+    unique("slots_category_name_unique").on(t.categoryId, t.name),
+    index("slots_equipmentTypeId_index").on(t.equipmentTypeId),
+  ],
 );
 
 export const actions = pgTable(
   "actions",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text().primaryKey(),
     name: text().notNull(),
     yield: integer().notNull().default(0),
     quality: integer().notNull().default(0),
@@ -165,10 +182,10 @@ export const actions = pgTable(
 export const recipes = pgTable(
   "recipes",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text().primaryKey(),
     name: text().notNull(),
-    categoryId: uuid().notNull().references(() => categories.id, { onDelete: "restrict" }),
-    outputEquipmentId: uuid().notNull().references(() => equipment.id, { onDelete: "restrict" }),
+    categoryId: text().notNull().references(() => categories.id, { onDelete: "restrict" }),
+    outputEquipmentId: text().notNull().references(() => equipment.id, { onDelete: "restrict" }),
     levelRequirement: integer().notNull().default(1),
   },
   (t) => [
@@ -181,8 +198,8 @@ export const recipes = pgTable(
 export const requiredResources = pgTable(
   "requiredResources",
   {
-    recipeId: uuid().notNull().references(() => recipes.id, { onDelete: "cascade" }),
-    resourceId: uuid().notNull().references(() => resources.id, { onDelete: "restrict" }),
+    recipeId: text().notNull().references(() => recipes.id, { onDelete: "cascade" }),
+    resourceId: text().notNull().references(() => resources.id, { onDelete: "restrict" }),
     amount: integer().notNull(),
   },
   (t) => [
@@ -212,7 +229,7 @@ export const categoryLevel = pgTable(
   "categoryLevel",
   {
     userId: uuid().notNull().references(() => users.id, { onDelete: "cascade" }),
-    categoryId: uuid().notNull().references(() => categories.id, { onDelete: "restrict" }),
+    categoryId: text().notNull().references(() => categories.id, { onDelete: "restrict" }),
     level: integer().notNull().default(1),
     xp: bigint({ mode: "number" }).notNull().default(0),
   },
@@ -228,8 +245,8 @@ export const resourceCollection = pgTable(
   "resourceCollection",
   {
     inventoryId: uuid().notNull().references(() => inventory.id, { onDelete: "cascade" }),
-    resourceId: uuid().notNull().references(() => resources.id, { onDelete: "restrict" }),
-    rarityId: uuid().notNull().references(() => rarity.id, { onDelete: "restrict" }),
+    resourceId: text().notNull().references(() => resources.id, { onDelete: "restrict" }),
+    rarityId: text().notNull().references(() => rarity.id, { onDelete: "restrict" }),
     quantity: bigint({ mode: "number" }).notNull().default(0),
   },
   (t) => [
@@ -243,8 +260,8 @@ export const equipmentCollection = pgTable(
   "equipmentCollection",
   {
     inventoryId: uuid().notNull().references(() => inventory.id, { onDelete: "cascade" }),
-    equipmentId: uuid().notNull().references(() => equipment.id, { onDelete: "restrict" }),
-    rarityId: uuid().notNull().references(() => rarity.id, { onDelete: "restrict" }),
+    equipmentId: text().notNull().references(() => equipment.id, { onDelete: "restrict" }),
+    rarityId: text().notNull().references(() => rarity.id, { onDelete: "restrict" }),
     quantity: bigint({ mode: "number" }).notNull().default(0),
     createdAt: timestamptz().notNull().defaultNow(),
   },
@@ -259,9 +276,9 @@ export const equippedItem = pgTable(
   "equippedItem",
   {
     userId: uuid().notNull().references(() => users.id, { onDelete: "cascade" }),
-    slotId: uuid().notNull().references(() => slots.id, { onDelete: "restrict" }),
-    equipmentId: uuid().notNull().references(() => equipment.id, { onDelete: "restrict" }),
-    rarityId: uuid().notNull().references(() => rarity.id, { onDelete: "restrict" }),
+    slotId: text().notNull().references(() => slots.id, { onDelete: "restrict" }),
+    equipmentId: text().notNull().references(() => equipment.id, { onDelete: "restrict" }),
+    rarityId: text().notNull().references(() => rarity.id, { onDelete: "restrict" }),
   },
   (t) => [
     primaryKey({ columns: [t.userId, t.slotId] }),
@@ -275,8 +292,8 @@ export const task = pgTable(
   {
     id: uuid().primaryKey().defaultRandom(),
     userId: uuid().notNull().references(() => users.id, { onDelete: "cascade" }),
-    resourceId: uuid().references(() => resources.id, { onDelete: "restrict" }),
-    recipeId: uuid().references(() => recipes.id, { onDelete: "restrict" }),
+    resourceId: text().references(() => resources.id, { onDelete: "restrict" }),
+    recipeId: text().references(() => recipes.id, { onDelete: "restrict" }),
     craftCount: integer(),
     completedCount: integer().notNull().default(0),
     startTime: timestamptz().notNull().defaultNow(),
@@ -300,7 +317,7 @@ export const taskAction = pgTable(
   "taskAction",
   {
     taskId: uuid().notNull().references(() => task.id, { onDelete: "cascade" }),
-    actionId: uuid().notNull().references(() => actions.id, { onDelete: "restrict" }),
+    actionId: text().notNull().references(() => actions.id, { onDelete: "restrict" }),
     position: integer().notNull(),
   },
   (t) => [
@@ -315,8 +332,8 @@ export const taskRecipeInput = pgTable(
   "taskRecipeInput",
   {
     taskId: uuid().notNull().references(() => task.id, { onDelete: "cascade" }),
-    resourceId: uuid().notNull().references(() => resources.id, { onDelete: "restrict" }),
-    rarityId: uuid().notNull().references(() => rarity.id, { onDelete: "restrict" }),
+    resourceId: text().notNull().references(() => resources.id, { onDelete: "restrict" }),
+    rarityId: text().notNull().references(() => rarity.id, { onDelete: "restrict" }),
   },
   (t) => [primaryKey({ columns: [t.taskId, t.resourceId] })],
 );
@@ -328,9 +345,9 @@ export const marketListing = pgTable(
     id: uuid().primaryKey().defaultRandom(),
     userId: uuid().notNull().references(() => users.id, { onDelete: "cascade" }),
     orderType: text({ enum: ["buy", "sell"] }).notNull(),
-    equipmentId: uuid().references(() => equipment.id, { onDelete: "restrict" }),
-    resourceId: uuid().references(() => resources.id, { onDelete: "restrict" }),
-    rarityId: uuid().notNull().references(() => rarity.id, { onDelete: "restrict" }),
+    equipmentId: text().references(() => equipment.id, { onDelete: "restrict" }),
+    resourceId: text().references(() => resources.id, { onDelete: "restrict" }),
+    rarityId: text().notNull().references(() => rarity.id, { onDelete: "restrict" }),
     originalQuantity: bigint({ mode: "number" }).notNull(),
     quantity: bigint({ mode: "number" }).notNull(),
     unitPrice: bigint({ mode: "number" }).notNull(),
@@ -367,9 +384,9 @@ export const trades = pgTable(
     listingId: uuid().references(() => marketListing.id, { onDelete: "set null" }),
     sellerId: uuid().references(() => users.id, { onDelete: "set null" }),
     buyerId: uuid().references(() => users.id, { onDelete: "set null" }),
-    equipmentId: uuid().references(() => equipment.id, { onDelete: "restrict" }),
-    resourceId: uuid().references(() => resources.id, { onDelete: "restrict" }),
-    rarityId: uuid().notNull().references(() => rarity.id, { onDelete: "restrict" }),
+    equipmentId: text().references(() => equipment.id, { onDelete: "restrict" }),
+    resourceId: text().references(() => resources.id, { onDelete: "restrict" }),
+    rarityId: text().notNull().references(() => rarity.id, { onDelete: "restrict" }),
     quantity: bigint({ mode: "number" }).notNull(),
     unitPrice: bigint({ mode: "number" }).notNull(),
     tradedAt: timestamptz().notNull().defaultNow(),

@@ -92,7 +92,6 @@ export const resources = pgTable(
     id: text().primaryKey(),
     categoryId: text().notNull().references(() => categories.id, { onDelete: "restrict" }),
     itemName: text().notNull(),
-    levelRequirement: integer().notNull().default(1),
     progressRequirement: integer().notNull().default(0),
     qualityRequirement: integer().notNull().default(0),
     yieldRequirement: integer().notNull().default(0),
@@ -100,7 +99,6 @@ export const resources = pgTable(
   },
   (t) => [
     unique("resources_itemName_unique").on(t.itemName),
-    check("resources_levelRequirement_check", sql`${t.levelRequirement} >= 1`),
     check(
       "resources_requirements_check",
       sql`${t.progressRequirement} >= 0 AND ${t.qualityRequirement} >= 0 AND ${t.yieldRequirement} >= 0`,
@@ -117,26 +115,27 @@ export const equipment = pgTable(
     name: text().notNull(),
     // NULL = universal, fits any category's slots
     categoryId: text().references(() => categories.id, { onDelete: "restrict" }),
-    typeId: text().references(() => equipmentType.id, { onDelete: "restrict" }),
+    typeId: text().notNull().references(() => equipmentType.id, { onDelete: "restrict" }),
+    levelRequirement: integer().notNull().default(1),
     vendorPrice: bigint({ mode: "number" }).notNull().default(0),
   },
   (t) => [
     unique("equipment_name_unique").on(t.name),
+    check("equipment_levelRequirement_check", sql`${t.levelRequirement} >= 1`),
     check("equipment_vendorPrice_check", sql`${t.vendorPrice} >= 0`),
     index("equipment_categoryId_index").on(t.categoryId),
     index("equipment_typeId_index").on(t.typeId),
   ],
 );
 
+// e.g. pickaxe, axe, hammer. A slot only accepts equipment of its type.
 export const equipmentType = pgTable(
   "equipmentType",
   {
     id: text().primaryKey(),
-    type: text().notNull(),
+    name: text().notNull(),
   },
-  (t) => [
-    unique("equipment_type_unique").on(t.type),
-  ],
+  (t) => [unique("equipmentType_name_unique").on(t.name)],
 );
 
 export const equipmentStats = pgTable(
@@ -157,7 +156,7 @@ export const slots = pgTable(
   {
     id: text().primaryKey(),
     categoryId: text().notNull().references(() => categories.id, { onDelete: "restrict" }),
-    equipmentTypeId: text().references(() => equipmentType.id, { onDelete: "restrict" }),
+    equipmentTypeId: text().notNull().references(() => equipmentType.id, { onDelete: "restrict" }),
     name: text().notNull(),
   },
   (t) => [
@@ -206,6 +205,38 @@ export const requiredResources = pgTable(
     primaryKey({ columns: [t.recipeId, t.resourceId] }),
     check("requiredResources_amount_check", sql`${t.amount} > 0`),
     index("requiredResources_resourceId_index").on(t.resourceId),
+  ],
+);
+
+// A gatherable node: one main resource plus optional secondary drops.
+// levelRequirement and xpRequirement are both needed to unlock it.
+export const resourceGatheringGroup = pgTable(
+  "resourceGatheringGroup",
+  {
+    id: text().primaryKey(),
+    mainResourceId: text().notNull().references(() => resources.id, { onDelete: "restrict" }),
+    levelRequirement: integer().notNull().default(1),
+    xpRequirement: bigint({ mode: "number" }).notNull().default(0),
+  },
+  (t) => [
+    unique("resourceGatheringGroup_mainResourceId_unique").on(t.mainResourceId),
+    check("resourceGatheringGroup_levelRequirement_check", sql`${t.levelRequirement} >= 1`),
+    check("resourceGatheringGroup_xpRequirement_check", sql`${t.xpRequirement} >= 0`),
+  ],
+);
+
+// Extra resources a group can drop. dropChance is 0-1 (0.05 = 5%); rarity is rolled by rarity odds.
+export const gatheringGroupSecondaryResources = pgTable(
+  "gatheringGroupSecondaryResources",
+  {
+    gatheringGroupId: text().notNull().references(() => resourceGatheringGroup.id, { onDelete: "cascade" }),
+    resourceId: text().notNull().references(() => resources.id, { onDelete: "restrict" }),
+    dropChance: doublePrecision().notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.gatheringGroupId, t.resourceId] }),
+    check("gatheringGroupSecondaryResources_dropChance_check", sql`${t.dropChance} > 0 AND ${t.dropChance} <= 1`),
+    index("gatheringGroupSecondaryResources_resourceId_index").on(t.resourceId),
   ],
 );
 
@@ -292,7 +323,7 @@ export const task = pgTable(
   {
     id: uuid().primaryKey().defaultRandom(),
     userId: uuid().notNull().references(() => users.id, { onDelete: "cascade" }),
-    resourceId: text().references(() => resources.id, { onDelete: "restrict" }),
+    gatheringGroupId: text().references(() => resourceGatheringGroup.id, { onDelete: "restrict" }),
     recipeId: text().references(() => recipes.id, { onDelete: "restrict" }),
     craftCount: integer(),
     completedCount: integer().notNull().default(0),
@@ -301,7 +332,7 @@ export const task = pgTable(
   },
   (t) => [
     unique("task_userId_unique").on(t.userId),
-    check("task_target_check", sql`(${t.resourceId} IS NULL) <> (${t.recipeId} IS NULL)`),
+    check("task_target_check", sql`(${t.gatheringGroupId} IS NULL) <> (${t.recipeId} IS NULL)`),
     check(
       "task_craftCount_check",
       sql`${t.craftCount} IS NULL OR (${t.craftCount} > 0 AND ${t.recipeId} IS NOT NULL)`,

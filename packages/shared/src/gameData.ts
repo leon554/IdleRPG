@@ -18,13 +18,14 @@ export type EquipmentStatsDef = {
   gatheringPoints: number;
 };
 
+// Keep rarity colors in sync with apps/mobile/src/theme/colors.js (rarityColors).
 export const RARITIES = {
-  common:    { name: "Common",    tier: 1, color: "#9e9e9e", odds: 1_000_000 },
-  uncommon:  { name: "Uncommon",  tier: 2, color: "#4caf50", odds: 250_000 },
-  rare:      { name: "Rare",      tier: 3, color: "#2196f3", odds: 50_000 },
-  epic:      { name: "Epic",      tier: 4, color: "#9c27b0", odds: 1000 },
-  legendary: { name: "Legendary", tier: 5, color: "#ff9800", odds: 10 },
-  mythical:  { name: "Mythical",  tier: 6, color: "#e91e63", odds: 1 },
+  common:    { name: "Common",    tier: 1, color: "#bcb3a6", odds: 1_000_000 },
+  uncommon:  { name: "Uncommon",  tier: 2, color: "#93bf72", odds: 250_000 },
+  rare:      { name: "Rare",      tier: 3, color: "#6fa0e3", odds: 50_000 },
+  epic:      { name: "Epic",      tier: 4, color: "#b48cdb", odds: 1000 },
+  legendary: { name: "Legendary", tier: 5, color: "#f5c542", odds: 10 },
+  mythical:  { name: "Mythical",  tier: 6, color: "#e57aa8", odds: 1 },
 } satisfies Record<string, RarityDef>;
 export type RarityId = keyof typeof RARITIES;
 

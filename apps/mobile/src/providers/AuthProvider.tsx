@@ -3,6 +3,7 @@ import { clearToken, getToken, saveToken } from "@/auth/token";
 import { getAuthState } from "@/auth/util";
 import { request, setUnauthorizedHandler } from "@/lib/api-service-layer/util";
 import { AuthState, User } from "@idlerpg/shared";
+import { router, usePathname } from "expo-router";
 import {createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode,} from "react";
 
 const DEFAULT_RESEND_COOLDOWN_MS = 60 * 1000;
@@ -30,6 +31,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(true);
     const [resendAvailableAt, setResendAvailableAt] = useState(0);
     const authState = useMemo(() => getAuthState(user), [user]);
+    const pathname = usePathname();
+    const gamePaths = ["/home"]
 
     const loadUser = useCallback(async () => {
         const me = await request<PublicUser>("/auth/get-user");
@@ -41,6 +44,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return () => setUnauthorizedHandler(null);
     }, []);
 
+    useEffect(() => {
+        switch (authState) {
+            case "Logged-Out":
+                router.replace("/(auth)/signup");
+                break;
+            case "Signed-In-Email-Not-Verified":
+                router.replace("/(auth)/verify-email");
+                break;
+            default:
+                if(!gamePaths.includes(pathname)) router.replace("/home");
+                break;
+        }
+    }, [authState])
 
     useEffect(() => {
         (async () => {

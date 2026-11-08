@@ -9,6 +9,11 @@ module.exports = {
   theme: {
     extend: {
       colors: { ...colors, rarity: rarityColors },
+      fontFamily: {
+        mono: ["JetBrainsMono_400Regular", "monospace"],
+        "mono-medium": ["JetBrainsMono_500Medium", "monospace"],
+        "mono-bold": ["JetBrainsMono_700Bold", "monospace"],
+      },
     },
   },
   plugins: [],

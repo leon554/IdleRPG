@@ -37,3 +37,14 @@ export type AuthRow = {
     id: string;
     emailVerifiedAt: Date | null;
 }
+
+export type User =  {
+    id: string;
+    userName: string;
+    email: string;
+    passwordHash: string;
+    emailVerifiedAt: Date | null;
+    createdAt: Date;
+}
+
+export type AuthState = "Logged-Out" | "Signed-In-Email-Verified" | "Signed-In-Email-Not-Verified"

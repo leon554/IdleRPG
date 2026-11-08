@@ -7,11 +7,12 @@ import { generateSessionToken, hashSessionToken } from "../util/sessionToken.js"
 import { emailCodesMatch, generateEmailCode, hashEmailCode } from "../util/emailCode.js";
 import { db } from "../db/index.js";
 import { emailVerification, session, users } from "../db/schema.js";
-import { EMAIL_CODE_EXPIRATION, EmailVerificationPurpose, MAX_EMAIL_CODE_ATTEMPS, SESSION_EXPIRATION } from "../constants.js";
+import { EMAIL_CODE_EXPIRATION, EmailVerificationPurpose, MAX_EMAIL_CODE_ATTEMPS, RESEND_COOLDOWN_MS, SESSION_EXPIRATION } from "../constants.js";
 import { isUniqueViolation } from "../errorHandler.js";
 import { and, desc, eq, lte, gt, sql} from "drizzle-orm";
 import { getAuthUser, requireAuth } from "../middleware/requireAuth.js";
 import { emailIpRateLimiter, emailUserRateLimiter, loginRateLimiter, signUpRateLimiter } from "../util/routeRateLimits.js";
+import { Util } from "../util/generalUtil/util.js";
 
 export const authRouter = Router()
 
@@ -109,7 +110,6 @@ authRouter.post("/verify-email-code",
 }))
 
 const DUMMY_HASH = await hashPassword("timing-safety-placeholder");
-
 authRouter.post("/login", loginRateLimiter, withBody(loginSchema, async (data, req, res) => {
     const [user] = await db
         .select({ id: users.id, passwordHash: users.passwordHash })
@@ -139,3 +139,65 @@ authRouter.post("/login", loginRateLimiter, withBody(loginSchema, async (data, r
 
     return res.status(200).json({ token: sessionToken });
 }));
+
+authRouter.get("/get-user", requireAuth, async (req, res) => {
+    const userData = getAuthUser(res)
+    
+    const [user] = await db.select()
+    .from(users)
+    .where(eq(users.id, userData.id))
+
+    res.status(200).json(Util.removeObjectKey(user, "passwordHash"))
+});
+
+
+authRouter.post("/send-new-email-code", requireAuth, async (req, res) => {
+    const user = getAuthUser(res);
+
+    if (user.emailVerifiedAt) {
+        return res.status(409).json({ error: "already_verified" });
+    }
+
+    const now = Date.now();
+
+    const [latest] = await db
+        .select({ createdAt: emailVerification.createdAt })
+        .from(emailVerification)
+        .where(and(
+            eq(emailVerification.userId, user.id),
+            eq(emailVerification.purpose, EmailVerificationPurpose.EmailVerification),
+        ))
+        .orderBy(desc(emailVerification.createdAt))
+        .limit(1);
+
+    if (latest) {
+        const waitMs = latest.createdAt.getTime() + RESEND_COOLDOWN_MS - now;
+        if (waitMs > 0) {
+            const retryAfter = Math.ceil(waitMs / 1000);
+            res.set("Retry-After", String(retryAfter));
+            return res.status(429).json({ error: "resend_cooldown", retryAfter });
+        }
+    }
+
+    const emailCode = generateEmailCode();
+
+    await db.transaction(async (tx) => {
+        await tx.delete(emailVerification).where(and(
+            eq(emailVerification.userId, user.id),
+            eq(emailVerification.purpose, EmailVerificationPurpose.EmailVerification),
+        ));
+
+        await tx.insert(emailVerification).values({
+            userId: user.id,
+            purpose: EmailVerificationPurpose.EmailVerification,
+            tokenHash: hashEmailCode(emailCode),
+            expiresAt: new Date(now + EMAIL_CODE_EXPIRATION),
+        });
+    });
+
+    if (process.env.NODE_ENV !== "production") {
+        console.log(`[dev] email code for ${user.id}: ${emailCode}`);
+    }
+
+    return res.status(200).json({ sent: true, retryAfter: RESEND_COOLDOWN_MS / 1000 });
+});

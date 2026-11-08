@@ -6,9 +6,8 @@ import { categories, equipment, recipes, requiredResources, resources } from "..
 import { Router } from "express";
 import { Util } from "../../util/generalUtil/util.js";
 
-export const gameDataRouter = Router()
-
-gameDataRouter.get("/recipes", requireAuth, async (req, res) => {
+export const recipeRouter = Router()
+recipeRouter.get("/recipes", requireAuth, async (req, res) => {
 
     const recipeRows = await db.select({
         id: recipes.id,

@@ -7,7 +7,7 @@ import { env } from './env.js';
 import { healthRouter } from './routes/health.js';
 import { authRouter } from './routes/auth.js';
 import { errorHandler } from './errorHandler.js';
-import { gameDataRouter } from './routes/gameData/recipes.js';
+import { gameDateRouter } from './routes/gameData/index.js';
 
 const app = express();
 
@@ -16,7 +16,7 @@ app.use(express.json());
 
 app.use("/api/health", healthRouter)
 app.use("/api/auth", authRouter)
-app.use("/api/gamedata", gameDataRouter)
+app.use("/api/gamedata", gameDateRouter)
 
 app.use(errorHandler)
 

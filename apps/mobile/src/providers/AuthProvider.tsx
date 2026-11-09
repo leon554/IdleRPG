@@ -32,7 +32,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [resendAvailableAt, setResendAvailableAt] = useState(0);
     const authState = useMemo(() => getAuthState(user), [user]);
     const pathname = usePathname();
-    const gamePaths = ["/home", "/activity", "/inventory", "/market", "/settings"]
+    const gamePaths = ["/home", "/activity", "/inventory", "/market", "/settings", "/gathering"]
+    const unAuthenticatedPaths = ["/singup", "/login", "/verify-email"]
 
     const loadUser = useCallback(async () => {
         const me = await request<PublicUser>("/auth/get-user");
@@ -49,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         switch (authState) {
             case "Logged-Out":
-                router.replace("/(auth)/signup");
+                if(!unAuthenticatedPaths.includes(pathname)) router.replace("/(auth)/signup");
                 break;
             case "Signed-In-Email-Not-Verified":
                 router.replace("/(auth)/verify-email");

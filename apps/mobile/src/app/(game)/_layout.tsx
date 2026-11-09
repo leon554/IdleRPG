@@ -31,7 +31,7 @@ export default function GameLayout() {
                     height: 88 + insets.bottom,
                     paddingTop: 8,
                     paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
-                    elevation: 0, 
+                    elevation: 0,
                 },
                 tabBarLabelStyle: { fontSize: 12, fontWeight: '600', marginTop: 2 },
             }}
@@ -41,6 +41,7 @@ export default function GameLayout() {
             <Tabs.Screen name="market" options={{ title: 'Market', tabBarIcon: tabIcon('shopping-cart') }} />
             <Tabs.Screen name="activity" options={{ title: 'Activity', tabBarIcon: tabIcon('bolt') }} />
             <Tabs.Screen name="settings" options={{ title: 'Settings', tabBarIcon: tabIcon('cog') }} />
+            <Tabs.Screen name="gathering" options={{ title: 'Gathering', tabBarItemStyle: { display: 'none' } }}/>
         </Tabs>
     );
 }

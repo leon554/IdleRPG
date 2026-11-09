@@ -1,3 +1,5 @@
+import { ResourceDef } from "./gameData.js";
+
 export * from "./gameData.js"
 
 export type HealthResponse = {
@@ -48,3 +50,14 @@ export type User =  {
 }
 
 export type AuthState = "Logged-Out" | "Signed-In-Email-Verified" | "Signed-In-Email-Not-Verified"
+
+export type GatheringGroup = {
+    id: string,
+    mainResource: ResourceDef,
+    levelRequirment: number,
+    category: string,
+    secondaryResources: {
+        dropChance: number,
+        resource: ResourceDef
+    }[]
+}

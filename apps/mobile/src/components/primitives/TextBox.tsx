@@ -22,10 +22,10 @@ export const TextBox = forwardRef<TextBoxRef, TextBoxProps>(function TextBox(
     return (
         <View className={`w-full gap-1.5 ${className}`}>
         {label && (
-            <Text className="text-sm font-medium text-textSecondary font-mono">{label}</Text>
+            <Text className="text-sm font-medium text-textSecondary  o">{label}</Text>
         )}
 
-        <View className="justify-center font-mono">
+        <View className="justify-center  o">
             <TextInput
                 ref={ref}
                 editable={editable}
@@ -36,7 +36,7 @@ export const TextBox = forwardRef<TextBoxRef, TextBoxProps>(function TextBox(
                 accessibilityLabel={label}
                 accessibilityState={{ disabled: !editable }}
                 className={[
-                    "rounded-md border bg-surface px-4 py-3 text-base text-textPrimary outline-none font-mono",
+                    "rounded-md border bg-surface px-4 py-3  text-textPrimary outline-none  o",
                     hasError
                     ? "border-danger focus:border-danger"
                     : "border-borderStrong focus:border-primary",
@@ -64,7 +64,7 @@ export const TextBox = forwardRef<TextBoxRef, TextBoxProps>(function TextBox(
         {hasError ? (
             <Text className="text-sm text-danger">{error}</Text>
         ) : helperText ? (
-            <Text className="text-sm text-textMuted font-mono">{helperText}</Text>
+            <Text className="text-sm text-textMuted  o">{helperText}</Text>
         ) : null}
         </View>
     );

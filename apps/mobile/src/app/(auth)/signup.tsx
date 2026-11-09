@@ -5,7 +5,7 @@ import { SignupCard } from '@/components/auth/SignUpCard'
 
 export default function singup() {
     return (
-        <Screen scroll className="justify-center">
+        <Screen scroll className="justify-center items-center">
             <SignupCard/>
         </Screen>
     )

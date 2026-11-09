@@ -3,25 +3,36 @@ import { Text, View } from "react-native";
 import { Button } from "../primitives/Button";
 import { Card } from "../primitives/Card";
 import { TextBox, TextBoxRef } from "../primitives/TextBox";
+import { useAuth } from "@/providers/AuthProvider";
+import { toast } from "../primitives/Toast";
+import { errorMessage, isApiError } from "@/lib/api-service-layer/errors";
 
 export function SignupCard() {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+    const [username, setUsername] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [loading, setLoading] = useState(false)
 
-  const emailRef = useRef<TextBoxRef>(null);
-  const passwordRef = useRef<TextBoxRef>(null);
-  const confirmRef = useRef<TextBoxRef>(null);
+    const emailRef = useRef<TextBoxRef>(null);
+    const passwordRef = useRef<TextBoxRef>(null);
+    const confirmRef = useRef<TextBoxRef>(null);
 
-  const handleSignup = () => {
-    // TODO: signup logic
-  };
+    const authContext = useAuth()
 
-  return (
-        <Card className="gap-4 p-6">
-            <View className="gap-1 items-center font-mono">
-                <Text className="text-2xl font-bold text-textPrimary font-mono">Create account</Text>
+    const handleSignup = async () => {
+        try {
+            await authContext.signUp(username, email, password)
+            toast.success("Signed Up, Check email for confirmation code", {duration: 2000})
+        } catch (error) {
+            toast.error(errorMessage(error))
+        }
+    };
+
+    return (
+        <Card className="gap-4 p-6 w-[80%] ">
+            <View className="gap-1 items-center  o">
+                <Text className="text-2xl font-bold text-textPrimary  o">Create account</Text>
             </View>
 
             <TextBox
@@ -34,7 +45,6 @@ export function SignupCard() {
                 autoCorrect={false}
                 returnKeyType="next"
                 onSubmitEditing={() => emailRef.current?.focus()}
-                // error={usernameError}
             />
 
             <TextBox
@@ -49,7 +59,6 @@ export function SignupCard() {
                 autoCorrect={false}
                 returnKeyType="next"
                 onSubmitEditing={() => passwordRef.current?.focus()}
-                // error={emailError}
             />
 
             <TextBox
@@ -58,13 +67,11 @@ export function SignupCard() {
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Create a password"
-                helperText="At least 8 characters"
                 secureTextEntry
                 autoCapitalize="none"
                 autoComplete="new-password"
                 returnKeyType="next"
                 onSubmitEditing={() => confirmRef.current?.focus()}
-                // error={passwordError}
             />
 
             <TextBox
@@ -78,14 +85,13 @@ export function SignupCard() {
                 autoComplete="new-password"
                 returnKeyType="done"
                 onSubmitEditing={handleSignup}
-                // error={confirmError}
             />
 
             <Button
                 title="Sign up"
                 fullWidth
                 onPress={handleSignup}
-                // loading={isSubmitting}
+                loading={loading}
             />
         </Card>
     );

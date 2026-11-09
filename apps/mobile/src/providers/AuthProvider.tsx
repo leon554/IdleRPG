@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [resendAvailableAt, setResendAvailableAt] = useState(0);
     const authState = useMemo(() => getAuthState(user), [user]);
     const pathname = usePathname();
-    const gamePaths = ["/home"]
+    const gamePaths = ["/home", "/activity", "/inventory", "/market", "/settings"]
 
     const loadUser = useCallback(async () => {
         const me = await request<PublicUser>("/auth/get-user");

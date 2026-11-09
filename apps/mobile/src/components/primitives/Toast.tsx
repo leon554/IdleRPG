@@ -85,7 +85,7 @@ export function ToastHost() {
         >
             <Pressable
                 onPress={hide}
-                className="flex-row items-center rounded-xl border border-border bg-surfaceRaised px-3.5 py-3 active:opacity-80"
+                className="flex-row items-center rounded-md border border-border bg-surfaceRaised px-3.5 py-3 active:opacity-80"
                 style={{
                     shadowColor: "#000",
                     shadowOpacity: 0.4,

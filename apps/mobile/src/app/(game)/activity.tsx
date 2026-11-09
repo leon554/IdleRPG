@@ -1,10 +1,10 @@
-import { View, Text } from 'react-native'
-import React from 'react'
+import { Screen } from '@/components/primitives/Screen'
+import PageHeader from '@/components/primitives/PageHeader'
 
 export default function activity() {
     return (
-        <View>
-            <Text>activity</Text>
-        </View>
+       <Screen>
+            <PageHeader name='Activity'/>
+       </Screen>
     )
 }

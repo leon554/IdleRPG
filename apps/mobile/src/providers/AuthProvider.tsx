@@ -45,6 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     useEffect(() => {
+        if (isLoading) return;
+
         switch (authState) {
             case "Logged-Out":
                 router.replace("/(auth)/signup");
@@ -56,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 if(!gamePaths.includes(pathname)) router.replace("/home");
                 break;
         }
-    }, [authState])
+    }, [authState, isLoading, pathname])
 
     useEffect(() => {
         (async () => {

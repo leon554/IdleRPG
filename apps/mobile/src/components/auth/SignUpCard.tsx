@@ -6,6 +6,7 @@ import { TextBox, TextBoxRef } from "../primitives/TextBox";
 import { useAuth } from "@/providers/AuthProvider";
 import { toast } from "../primitives/Toast";
 import { errorMessage, isApiError } from "@/lib/api-service-layer/errors";
+import { Link } from "expo-router";
 
 export function SignupCard() {
     const [username, setUsername] = useState("");
@@ -93,6 +94,10 @@ export function SignupCard() {
                 onPress={handleSignup}
                 loading={loading}
             />
+
+            <Text className="text-center text-textMuted">
+                Allready have an account? <Link href={"/login"} className="text-primary underline">Log In</Link>
+            </Text>
         </Card>
     );
 }

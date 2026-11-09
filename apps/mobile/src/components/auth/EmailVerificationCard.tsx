@@ -66,14 +66,12 @@ export default function EmailVerificationCard() {
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="next"
-            // error={emailError}
         />
 
         <Button
             title="Verify Email"
             fullWidth
             onPress={handleLogin}
-            // loading={isSubmitting}
         />
 
         <Button
@@ -81,7 +79,6 @@ export default function EmailVerificationCard() {
             variant="secondary"
             fullWidth
             onPress={handleResend}
-            // loading={isSubmitting}
         />
         </Card>
     );

@@ -201,3 +201,19 @@ authRouter.post("/send-new-email-code", requireAuth, async (req, res) => {
 
     return res.status(200).json({ sent: true, retryAfter: RESEND_COOLDOWN_MS / 1000 });
 });
+
+authRouter.post("/logout", requireAuth, async (req, res) => {
+    const user = getAuthUser(res);
+
+    const token = req.headers.authorization?.replace(/^Bearer\s+/i, "") ?? "";
+
+    await db
+        .delete(session)
+        .where(and(
+            eq(session.userId, user.id),
+            eq(session.sessionHash, hashSessionToken(token)),
+        ));
+
+    return res.status(200).json({ loggedOut: true });
+});
+

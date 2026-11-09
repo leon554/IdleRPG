@@ -107,7 +107,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const logOut = useCallback(async () => {
-   
+        await request("/auth/logout", { method: "POST" });
+       clearToken()
+       setUser(null)
     }, []);
 
     const value = useMemo<AuthContextType>(

@@ -9,7 +9,7 @@ export const gatheringGroupRouter = Router()
 gatheringGroupRouter.get("/gathering-groups", async (req, res) => {
     const gg = await db.select({
         id: resourceGatheringGroup.id,
-        mainResource: resourceGatheringGroup.mainResourceId,
+        mainResource: resources,
         levelRequirement: resourceGatheringGroup.levelRequirement,
         category: categories.name 
     })
@@ -20,12 +20,7 @@ gatheringGroupRouter.get("/gathering-groups", async (req, res) => {
     const secondaryResources = await db.select({
         gatheringGroupId: gatheringGroupSecondaryResources.gatheringGroupId,
         dropChance: gatheringGroupSecondaryResources.dropChance,
-        resourceName: resources.itemName,
-        progressRequirement: resources.progressRequirement,
-        qualityRequirement: resources.qualityRequirement,
-        yieldRequirement: resources.yieldRequirement,
-        vendorPrice: resources.vendorPrice,
-
+        resource: resources
     })
     .from(gatheringGroupSecondaryResources)
     .innerJoin(resources, eq(resources.id, gatheringGroupSecondaryResources.resourceId))

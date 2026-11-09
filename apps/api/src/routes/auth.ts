@@ -78,7 +78,7 @@ authRouter.post("/verify-email-code",
         .limit(1);
 
     if(!latestCode){
-        return res.status(404).json({ error: "wrong code" });
+        return res.status(404).json({ error: "code_expired" });
     }
 
     if(latestCode.attempts >= MAX_EMAIL_CODE_ATTEMPS){
@@ -105,7 +105,7 @@ authRouter.post("/verify-email-code",
         .set({attempts: sql`${emailVerification.attempts} + 1`})
         .where(and(eq(emailVerification.userId, user.id), eq(emailVerification.id, latestCode.id)))
     
-    return res.status(404).json({ error: "wrong code" });
+    return res.status(404).json({ error: "wrong_code" });
     
 }))
 
@@ -149,7 +149,6 @@ authRouter.get("/get-user", requireAuth, async (req, res) => {
 
     res.status(200).json(Util.removeObjectKey(user, "passwordHash"))
 });
-
 
 authRouter.post("/send-new-email-code", requireAuth, async (req, res) => {
     const user = getAuthUser(res);

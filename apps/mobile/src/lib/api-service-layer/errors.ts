@@ -1,15 +1,14 @@
 import { ApiError } from "./util";
 
 const MESSAGES = {
-    network_error: "Can't reach the server. Check your connection.",
-    timeout: "The request took too long. Please try again.",
-    unauthorized: "Your session expired. Please sign in again.",
-    forbidden: "You don't have permission to do that.",
-    not_found: "We couldn't find that.",
-    rate_limited: "Too many requests. Try again in a moment.",
     internal_error: "Something went wrong on our side.",
     email_taken: "Email is already in use. Log in instead.",
-    resend_cooldown: "Please wait until sending a new email code"
+    resend_cooldown: "Please wait until sending a new email code",
+    wrong_code: "Incorrect code try again",
+    too_many_attempts: "Too many attempts for this code please generate another code",
+    code_expired: "Email cope has expired please generate a new one",
+    invalid_credentials: "Credentials are wrong check for any spelling errors",
+    already_verified: "Email is allready verified"
 } as const satisfies Record<string, string>;
 
 export type ErrorCode = keyof typeof MESSAGES;

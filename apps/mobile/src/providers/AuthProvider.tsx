@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [resendAvailableAt, setResendAvailableAt] = useState(0);
     const authState = useMemo(() => getAuthState(user), [user]);
     const pathname = usePathname();
-    const gamePaths = ["/home", "/activity", "/inventory", "/market", "/settings", "/gathering"]
+    const gamePaths = ["/home", "/activity", "/inventory", "/market", "/settings", "/home/gathering"]
     const unAuthenticatedPaths = ["/singup", "/login", "/verify-email"]
 
     const loadUser = useCallback(async () => {

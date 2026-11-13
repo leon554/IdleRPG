@@ -7,7 +7,7 @@ import { router } from 'expo-router';
 export default function GoToGatheringCard() {
     return (
         <Card className='flex-row justify-between items-center'
-            onPress={() => router.push("/gathering")}
+            onPress={() => router.push("/home/gathering")}
         >
             <Text className='text-textSecondary font-medium'>
                 Gathering

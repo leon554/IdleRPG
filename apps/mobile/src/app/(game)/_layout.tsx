@@ -41,7 +41,6 @@ export default function GameLayout() {
             <Tabs.Screen name="market" options={{ title: 'Market', tabBarIcon: tabIcon('shopping-cart') }} />
             <Tabs.Screen name="activity" options={{ title: 'Activity', tabBarIcon: tabIcon('bolt') }} />
             <Tabs.Screen name="settings" options={{ title: 'Settings', tabBarIcon: tabIcon('cog') }} />
-            <Tabs.Screen name="gathering" options={{ title: 'Gathering', tabBarItemStyle: { display: 'none' } }}/>
         </Tabs>
     );
 }

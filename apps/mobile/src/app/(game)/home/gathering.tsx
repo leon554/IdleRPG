@@ -8,53 +8,29 @@ import { errorMessage } from '@/lib/api-service-layer/errors'
 import { FlatList } from 'react-native'
 import { Card } from '@/components/primitives/Card'
 import { Text } from "react-native";
+import Entypo from '@expo/vector-icons/Entypo';
+import { router } from 'expo-router'
+import { useGameData } from '@/providers/StaticGameDataProvider'
 
 export default function Gathering() {
-    const [gatheringGroups, setGatheringGroups] = useState<GatheringGroup[]|null>(null)
-    const [selectedCategory, setSelectedCategory] = useState("")
-
-    const ggPerCategory = useMemo(() => {
-        const map: Map<string, GatheringGroup[]> = new Map()
-        gatheringGroups?.forEach(g => {
-            const prev = map.get(g.category)
-            if(prev){
-                prev.push(g)
-            }else{
-                map.set(g.category, [g])
-            }
-        })
-        return Object.fromEntries(map); 
-    }, [gatheringGroups])
-
-    useEffect(() => {
-        const fetchGG = async () => {
-            try {
-                const gg = await request<GatheringGroup[]>("/gamedata/gathering-groups")
-                setGatheringGroups(gg)
-                toast.success("succes")
-            } catch (error) {
-                toast.error(errorMessage(error))
-            }
-        }
-        fetchGG()
-    }, [])
+    const gameData = useGameData()
 
     return (
         <Screen className="gap-4">
-            <PageHeader name="Gathering" />
+            <PageHeader name="Gathering" onPrev={() => router.replace("/(game)/home")}/>
             <FlatList
-                data={Object.entries(ggPerCategory)}
+                data={Object.entries(gameData?.ggPerCategory ?? [])}
                 keyExtractor={(item) => item[0]}
                 contentContainerStyle={{ gap: 12 }}
                 renderItem={({ item }) => {
                     return(
-                        <Card>
+                        <Card className='flex-row items-center justify-between'
+                            onPress={() => router.push(`/home/category-gathering-groups/${item[0]}`)}
+                        >
                             <Text className='text-textSecondary'>
-                                {item[0]}
+                                {item[1][0].category}
                             </Text>
-                             <Text className='text-textSecondary'>
-                                {JSON.stringify(item[1])}
-                            </Text>
+                            <Entypo name="chevron-right" size={24} className='text-textSecondary'/>
                         </Card>
                     )
                 }}

@@ -46,7 +46,7 @@ export type EquipmentTypeId = keyof typeof EQUIPMENT_TYPES;
 
 export type ResourceDef = {
   category: CategoryId;
-  name: string;
+  itemName: string;
   progressRequirement: number;
   qualityRequirement: number;
   yieldRequirement: number;
@@ -55,19 +55,19 @@ export type ResourceDef = {
 
 export const RESOURCES = {
   copper_ore: {
-    category: "mining", name: "Copper Ore",
+    category: "mining", itemName: "Copper Ore",
     progressRequirement: 100, qualityRequirement: 50, yieldRequirement: 1, vendorPrice: 2,
   },
   iron_ore: {
-    category: "mining", name: "Iron Ore",
+    category: "mining", itemName: "Iron Ore",
     progressRequirement: 250, qualityRequirement: 120, yieldRequirement: 1, vendorPrice: 5,
   },
   stone: {
-    category: "mining", name: "Stone",
+    category: "mining", itemName: "Stone",
     progressRequirement: 50, qualityRequirement: 20, yieldRequirement: 1, vendorPrice: 1,
   },
   oak_log: {
-    category: "woodcutting", name: "Oak Log",
+    category: "woodcutting", itemName: "Oak Log",
     progressRequirement: 100, qualityRequirement: 50, yieldRequirement: 1, vendorPrice: 2,
   },
 } satisfies Record<string, ResourceDef>;

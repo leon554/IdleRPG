@@ -11,7 +11,8 @@ gatheringGroupRouter.get("/gathering-groups", async (req, res) => {
         id: resourceGatheringGroup.id,
         mainResource: resources,
         levelRequirement: resourceGatheringGroup.levelRequirement,
-        category: categories.name 
+        category: categories.name,
+        categoryId: categories.id
     })
     .from(resourceGatheringGroup)
     .innerJoin(resources, eq(resources.id, resourceGatheringGroup.mainResourceId))

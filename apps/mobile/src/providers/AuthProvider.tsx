@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [resendAvailableAt, setResendAvailableAt] = useState(0);
     const authState = useMemo(() => getAuthState(user), [user]);
     const pathname = usePathname();
-    const gamePaths = ["/home", "/activity", "/inventory", "/market", "/settings", "/home/gathering"]
+    const gamePaths = ["/home", "/activity", "/inventory", "/market", "/settings", "/home/gathering", "/home/category-gathering-groups/"]
     const unAuthenticatedPaths = ["/singup", "/login", "/verify-email"]
 
     const loadUser = useCallback(async () => {
@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 router.replace("/(auth)/verify-email");
                 break;
             default:
-                if(!gamePaths.includes(pathname)) router.replace("/home");
+                if(unAuthenticatedPaths.includes(pathname)) router.replace("/home");
                 break;
         }
     }, [authState, isLoading, pathname])

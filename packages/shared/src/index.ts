@@ -56,6 +56,7 @@ export type GatheringGroup = {
     mainResource: ResourceDef,
     levelRequirment: number,
     category: string,
+    categoryId: string,
     secondaryResources: {
         dropChance: number,
         resource: ResourceDef

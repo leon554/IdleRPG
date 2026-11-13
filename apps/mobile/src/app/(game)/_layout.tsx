@@ -4,6 +4,7 @@ import { StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme';
 import type { ColorValue } from 'react-native';
+import { router } from 'expo-router';
 
 function iconColor(color: ColorValue | null) {
     return typeof color === 'string' ? color : colors.textMuted;
@@ -22,6 +23,7 @@ export default function GameLayout() {
             screenOptions={{
                 headerShown: false,
                 sceneStyle: { backgroundColor: colors.background },
+                popToTopOnBlur: true,
                 tabBarActiveTintColor: colors.primary,
                 tabBarInactiveTintColor: colors.textMuted,
                 tabBarStyle: {
@@ -36,7 +38,17 @@ export default function GameLayout() {
                 tabBarLabelStyle: { fontSize: 12, fontWeight: '600', marginTop: 2 },
             }}
         >
-            <Tabs.Screen name="home" options={{ title: 'Home', tabBarIcon: tabIcon('home') }} />
+            <Tabs.Screen name="home" 
+                options={{ title: 'Home', tabBarIcon: tabIcon('home') }}
+                listeners={({ navigation }) => ({
+                    tabPress: (e) => {
+                        if (navigation.isFocused()) {
+                            e.preventDefault();
+                            router.dismissTo('/home');
+                        }
+                    },
+                })}
+             />
             <Tabs.Screen name="inventory" options={{ title: 'Inventory', tabBarIcon: tabIcon('archive') }} />
             <Tabs.Screen name="market" options={{ title: 'Market', tabBarIcon: tabIcon('shopping-cart') }} />
             <Tabs.Screen name="activity" options={{ title: 'Activity', tabBarIcon: tabIcon('bolt') }} />

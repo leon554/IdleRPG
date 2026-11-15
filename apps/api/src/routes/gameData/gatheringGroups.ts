@@ -10,24 +10,26 @@ import { requireAuth } from "../../middleware/requireAuth.js";
 export const gatheringGroupRouter = Router()
 
 gatheringGroupRouter.get("/gathering-groups", twoAttempsASecondPerIpLimiter, requireAuth, async (req, res) => {
-    const gg = await db.select({
-        id: resourceGatheringGroup.id,
-        mainResource: resources,
-        levelRequirement: resourceGatheringGroup.levelRequirement,
-        category: categories.name,
-        categoryId: categories.id
-    })
-    .from(resourceGatheringGroup)
-    .innerJoin(resources, eq(resources.id, resourceGatheringGroup.mainResourceId))
-    .innerJoin(categories, eq(resources.categoryId, categories.id))
+    const [gg, secondaryResources] = await Promise.all([
+        db.select({
+            id: resourceGatheringGroup.id,
+            mainResource: resources,
+            levelRequirement: resourceGatheringGroup.levelRequirement,
+            category: categories.name,
+            categoryId: categories.id,
+        })
+        .from(resourceGatheringGroup)
+        .innerJoin(resources, eq(resources.id, resourceGatheringGroup.mainResourceId))
+        .innerJoin(categories, eq(resources.categoryId, categories.id)),
 
-    const secondaryResources = await db.select({
-        gatheringGroupId: gatheringGroupSecondaryResources.gatheringGroupId,
-        dropChance: gatheringGroupSecondaryResources.dropChance,
-        resource: resources
-    })
-    .from(gatheringGroupSecondaryResources)
-    .innerJoin(resources, eq(resources.id, gatheringGroupSecondaryResources.resourceId))
+        db.select({
+            gatheringGroupId: gatheringGroupSecondaryResources.gatheringGroupId,
+            dropChance: gatheringGroupSecondaryResources.dropChance,
+            resource: resources,
+        })
+        .from(gatheringGroupSecondaryResources)
+        .innerJoin(resources, eq(resources.id, gatheringGroupSecondaryResources.resourceId)),
+    ]);
 
     const resourcesPerGG: Map<string, Omit<(typeof secondaryResources)[number], "gatheringGroupId">[]> = new Map()
     secondaryResources.forEach(r => {

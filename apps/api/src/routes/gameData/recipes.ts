@@ -10,37 +10,38 @@ import { twoAttempsASecondPerIpLimiter } from "../../util/authUtil/routeRateLimi
 export const recipeRouter = Router()
 recipeRouter.get("/recipes", twoAttempsASecondPerIpLimiter, requireAuth, async (req, res) => {
 
-    const recipeRows = await db.select({
-        id: recipes.id,
-        name: recipes.name,
-        category: categories.name,
-        outputEquipmentId: recipes.outputEquipmentId,
-        levelRequirement: recipes.levelRequirement,
-        equipmentName: equipment.name,
-    })
-    .from(recipes)
-    .innerJoin(categories, eq(recipes.categoryId, categories.id))
-    .innerJoin(equipment, eq(recipes.outputEquipmentId, equipment.id))
-    .orderBy(recipes.name)
+    const [recipeRows, requiredRows] = await Promise.all([
+        db.select({
+            recipe: recipes,
+            categoryName: categories.name,
+            categoryId: categories.id,
+            outputEquipment: equipment,
+        })
+        .from(recipes)
+        .innerJoin(categories, eq(recipes.categoryId, categories.id))
+        .innerJoin(equipment, eq(recipes.outputEquipmentId, equipment.id))
+        .orderBy(recipes.name),
 
-    const requiredRows = await db
-        .select({
-        recipeId: requiredResources.recipeId,
-        resourceId: requiredResources.resourceId,
-        name: resources.itemName,
-        amount: requiredResources.amount,
-    })
-    .from(requiredResources)
-    .innerJoin(resources, eq(resources.id, requiredResources.resourceId));
+        db.select({
+            recipeId: requiredResources.recipeId,
+            resourceId: requiredResources.resourceId,
+            name: resources.itemName,
+            amount: requiredResources.amount,
+        })
+        .from(requiredResources)
+        .innerJoin(resources, eq(resources.id, requiredResources.resourceId)),
+    ]);
 
     const requiredResourcesPerRecipe: Map<string, Omit<(typeof requiredRows)[number], "recipeId">[]> = new Map()
+
     requiredRows.forEach(r => {
         const prev = requiredResourcesPerRecipe.get(r.recipeId)
         const newR = Util.removeObjectKey(r, "recipeId")
         requiredResourcesPerRecipe.set(r.recipeId, prev ? [...prev, newR] : [newR])
     })
 
-    const output = recipeRows.map(r => ({...r, requiredResources: requiredResourcesPerRecipe.get(r.id) ?? []}))
+    const output = recipeRows.map(r => ({...r, requiredResources: requiredResourcesPerRecipe.get(r.recipe.id) ?? []}))
+    const groupedOutput = Object.groupBy(output, (r) => r.categoryId);
 
-    res.status(200).json({recipes: output})
+    res.status(200).json(groupedOutput)
 })

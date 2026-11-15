@@ -1,16 +1,20 @@
 import { View, Text } from 'react-native'
 import React from 'react'
-import { Card } from '../primitives/Card'
+import { Card } from './Card'
 import Entypo from '@expo/vector-icons/Entypo';
-import { router } from 'expo-router';
+import { RelativePathString, router } from 'expo-router';
 
-export default function GoToGatheringCard() {
+interface GoToCardProps{
+    name: string,
+    route: string
+}
+export default function GoToCard({name, route}: GoToCardProps) {
     return (
         <Card className='flex-row justify-between items-center'
-            onPress={() => router.push("/home/gathering")}
+            onPress={() => router.push(route as RelativePathString)}
         >
             <Text className='text-textSecondary font-medium'>
-                Gathering
+                {name}
             </Text>
            <Entypo name="chevron-right" size={24} className='text-textSecondary'/>
         </Card>

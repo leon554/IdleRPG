@@ -1,4 +1,4 @@
-import { ResourceDef } from "./gameData.js";
+import { EquipmentDef, RecipeDef, ResourceDef } from "./gameData.js";
 
 export * from "./gameData.js"
 
@@ -60,5 +60,17 @@ export type GatheringGroup = {
     secondaryResources: {
         dropChance: number,
         resource: ResourceDef
+    }[]
+}
+
+export type Recipe = {
+    recipe: RecipeDef,
+    categoryName: string,
+    categoryId: string,
+    outputEquipment: EquipmentDef,
+    requiredResources: {
+        resourceId: string,
+        name: string,
+        amount: number
     }[]
 }

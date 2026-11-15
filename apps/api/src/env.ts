@@ -1,7 +1,6 @@
 import path from 'node:path';
 import { config } from 'dotenv';
 
-// Docker Compose injects env vars directly; dotenv never overrides those.
 config({ path: path.resolve(import.meta.dirname, '../../../.env'), quiet: true });
 
 function required(name: string): string {

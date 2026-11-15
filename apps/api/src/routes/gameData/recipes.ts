@@ -5,9 +5,10 @@ import { eq, and } from "drizzle-orm";
 import { categories, equipment, recipes, requiredResources, resources } from "../../db/schema.js";
 import { Router } from "express";
 import { Util } from "../../util/generalUtil/util.js";
+import { twoAttempsASecondPerIpLimiter } from "../../util/authUtil/routeRateLimits.js";
 
 export const recipeRouter = Router()
-recipeRouter.get("/recipes", requireAuth, async (req, res) => {
+recipeRouter.get("/recipes", twoAttempsASecondPerIpLimiter, requireAuth, async (req, res) => {
 
     const recipeRows = await db.select({
         id: recipes.id,

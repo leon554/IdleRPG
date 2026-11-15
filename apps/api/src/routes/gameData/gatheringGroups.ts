@@ -4,9 +4,12 @@ import { categories, gatheringGroupSecondaryResources, resourceGatheringGroup, r
 import { eq } from "drizzle-orm";
 import { Util } from "../../util/generalUtil/util.js";
 import { Router } from "express";
+import { twoAttempsASecondPerIpLimiter } from "../../util/authUtil/routeRateLimits.js";
+import { requireAuth } from "../../middleware/requireAuth.js";
 
 export const gatheringGroupRouter = Router()
-gatheringGroupRouter.get("/gathering-groups", async (req, res) => {
+
+gatheringGroupRouter.get("/gathering-groups", twoAttempsASecondPerIpLimiter, requireAuth, async (req, res) => {
     const gg = await db.select({
         id: resourceGatheringGroup.id,
         mainResource: resources,

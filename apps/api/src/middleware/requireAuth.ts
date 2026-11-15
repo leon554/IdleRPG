@@ -1,10 +1,9 @@
-// middleware/requireAuth.ts
 import type { RequestHandler, Response } from "express";
 import { and, eq, gt } from "drizzle-orm";
 import { db } from "../db/index.js";
 import { session, users } from "../db/schema.js";
 import { SESSION_EXPIRATION, TOKEN_LENGTH, REFRESH_AFTER } from "../constants.js";
-import { hashSessionToken } from "../util/sessionToken.js";
+import { hashSessionToken } from "../util/authUtil/sessionToken.js";
 import { type AuthRow, type AuthUser } from "@idlerpg/shared";          
 
 export const requireAuth: RequestHandler = async (req, res, next) => {

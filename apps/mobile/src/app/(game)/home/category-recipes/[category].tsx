@@ -4,14 +4,14 @@ import type { GatheringGroup } from '@idlerpg/shared';
 import { Screen } from '@/components/primitives/Screen';
 import PageHeader from '@/components/primitives/PageHeader';
 import { Card } from '@/components/primitives/Card';
-import { useGameData } from '@/providers/StaticGameDataProvider';
+import { useStaticGameData } from '@/providers/StaticGameDataProvider';
 import { View } from 'react-native';
 import { capitliseFirst } from '@/auth/util';
 import { rarityColors } from '@/theme';
 
 export default function ReipeScreen() {
    const { category } = useLocalSearchParams<{ category: string }>();
-    const gameData = useGameData();
+    const gameData = useStaticGameData();
 
     const recipes = gameData?.recipes[category] ?? []
 

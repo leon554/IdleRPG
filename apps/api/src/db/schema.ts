@@ -62,6 +62,10 @@ export const categories = pgTable(
     name: text().notNull(),
     type: text().notNull(),
     xpRate: integer().notNull(),
+    baseProgress: doublePrecision().notNull().default(0),
+    baseQuality: doublePrecision().notNull().default(0),
+    baseYield: doublePrecision().notNull().default(0),
+    baseGatheringPoints: doublePrecision().notNull().default(0),
   },
   (t) => [
     unique("categories_name_unique").on(t.name),

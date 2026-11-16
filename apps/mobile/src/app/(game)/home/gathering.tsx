@@ -10,10 +10,10 @@ import { Card } from '@/components/primitives/Card'
 import { Text } from "react-native";
 import Entypo from '@expo/vector-icons/Entypo';
 import { router } from 'expo-router'
-import { useGameData } from '@/providers/StaticGameDataProvider'
+import { useStaticGameData } from '@/providers/StaticGameDataProvider'
 
 export default function Gathering() {
-    const gameData = useGameData()
+    const gameData = useStaticGameData()
 
     return (
         <Screen className="gap-4">

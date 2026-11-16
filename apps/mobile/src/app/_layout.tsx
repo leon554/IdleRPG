@@ -4,21 +4,24 @@ import { StatusBar } from 'expo-status-bar';
 import { colors } from '@/theme';
 import { AuthProvider } from '@/providers/AuthProvider';
 import { ToastHost } from '@/components/primitives/Toast';
-import { GameDataProvider } from '@/providers/StaticGameDataProvider';
+import { StaticGameDataProvider } from '@/providers/StaticGameDataProvider';
+import { GameDataProvider } from '@/providers/GameDataProvider';
 
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <GameDataProvider>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: colors.background },
-          }}
-        />
-        <ToastHost />
-        <StatusBar style="light" />
-      </GameDataProvider>
+      <StaticGameDataProvider>
+        <GameDataProvider>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: colors.background },
+            }}
+          />
+          <ToastHost />
+          <StatusBar style="light" />
+        </GameDataProvider>
+      </StaticGameDataProvider>
     </AuthProvider>
   );
 }

@@ -9,7 +9,18 @@ export type CategoryDef = {
   name: string;
   type: "gathering" | "crafting";
   xpRate: number;
+  baseProgress: number,
+  baseQuality: number,
+  baseYield: number,
+  baseGatheringPoints: number,
 };
+
+const baseCategoryStats = {
+  baseProgress: 10,
+  baseQuality: 10,
+  baseYield: 10,
+  baseGatheringPoints: 100,
+}
 
 export type EquipmentStatsDef = {
   progress: number;
@@ -30,9 +41,9 @@ export const RARITIES = {
 export type RarityId = keyof typeof RARITIES;
 
 export const CATEGORIES = {
-  mining:      { name: "Mining",      type: "gathering", xpRate: 10 },
-  woodcutting: { name: "Woodcutting", type: "gathering", xpRate: 10 },
-  smithing:    { name: "Smithing",    type: "crafting",  xpRate: 15 },
+  mining:      { name: "Mining",      type: "gathering", xpRate: 10, ...baseCategoryStats },
+  woodcutting: { name: "Woodcutting", type: "gathering", xpRate: 10, ...baseCategoryStats},
+  smithing:    { name: "Smithing",    type: "crafting",  xpRate: 15, ...baseCategoryStats },
 } satisfies Record<string, CategoryDef>;
 export type CategoryId = keyof typeof CATEGORIES;
 

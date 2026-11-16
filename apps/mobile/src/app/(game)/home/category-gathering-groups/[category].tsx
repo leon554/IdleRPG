@@ -4,7 +4,7 @@ import type { GatheringGroup } from '@idlerpg/shared';
 import { Screen } from '@/components/primitives/Screen';
 import PageHeader from '@/components/primitives/PageHeader';
 import { Card } from '@/components/primitives/Card';
-import { useGameData } from '@/providers/StaticGameDataProvider';
+import { useStaticGameData } from '@/providers/StaticGameDataProvider';
 import { View } from 'react-native';
 import { Button } from '@/components/primitives/Button';
 import { useState } from 'react';
@@ -12,7 +12,7 @@ import { Modal } from '@/components/primitives/Modal';
 
 export default function CategoryScreen() {
     const { category } = useLocalSearchParams<{ category: string }>();
-    const gameData = useGameData();
+    const gameData = useStaticGameData();
 
     const [openModal, setOpenModal] = useState(false)
 

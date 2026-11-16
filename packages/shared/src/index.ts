@@ -102,3 +102,10 @@ export type Action = {
     progress: number;
     gatheringPointCost: number;
 };
+
+export type CategoryStats = {
+    progress: number;
+    quality: number;
+    yield: number;
+    gatheringPoints: number;
+};

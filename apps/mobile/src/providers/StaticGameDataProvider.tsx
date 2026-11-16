@@ -8,7 +8,7 @@ import { GameDataUtil } from "@/util/game-data-util";
 
 const DEFAULT_RESEND_COOLDOWN_MS = 60 * 1000;
 
-type GameDataContextType = {
+type StaticGameDataContextType = {
     gatheringGroups: GatheringGroup[]
     ggPerCategory: Record<string, GatheringGroup[]>
     loading: boolean,
@@ -16,9 +16,9 @@ type GameDataContextType = {
     actions: Action[]
 }; 
 
-const gameDataContext = createContext<GameDataContextType | null>(null);
+const staticGameDataContext = createContext<StaticGameDataContextType | null>(null);
 
-export function GameDataProvider({ children }: { children: ReactNode }) {
+export function StaticGameDataProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true)
 
     const [gatheringGroups, setGatheringGroups] = useState<GatheringGroup[]>([]);
@@ -31,6 +31,10 @@ export function GameDataProvider({ children }: { children: ReactNode }) {
 
    useEffect(() => {
         if (auth.isLoading || !auth.user) return;
+        if (!auth.user) {
+            setLoading(true);
+            return;
+        }
 
         const fetchGG = async () => {
             setLoading(true);   
@@ -58,10 +62,10 @@ export function GameDataProvider({ children }: { children: ReactNode }) {
         [gatheringGroups, ggPerCategory, loading, recipes, actions]
     );
 
-    return <gameDataContext.Provider value={value}>{children}</gameDataContext.Provider>;
+    return <staticGameDataContext.Provider value={value}>{children}</staticGameDataContext.Provider>;
 }
 
-export function useGameData() {
-    const ctx = useContext(gameDataContext);
+export function useStaticGameData() {
+    const ctx = useContext(staticGameDataContext);
     return ctx;
 }

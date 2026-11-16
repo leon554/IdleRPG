@@ -1,4 +1,5 @@
 import { Modal as RNModal, ModalProps as RNModalProps, Pressable, View } from "react-native";
+import { ToastHost } from "./Toast";
 
 type Variant = "center" | "sheet";
 
@@ -56,6 +57,8 @@ export function Modal({
                     {children}
                 </View>
             </View>
+            {/* The native modal window covers the root ToastHost, so toasts render here while it's open. */}
+            <ToastHost />
         </RNModal>
     );
 }

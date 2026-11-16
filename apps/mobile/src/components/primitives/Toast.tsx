@@ -15,11 +15,15 @@ export const toast = {
 
 type ToastItem = { id: number; type: ToastType; message: string; duration: number };
 
-let listener: ((t: ToastItem) => void) | null = null;
+// A stack of mounted hosts. A native Modal opens its own window above the app, so the
+// root host can't draw over it; Modal mounts its own ToastHost, and toasts always go to
+// the most recently mounted host (the topmost one).
+type Listener = (t: ToastItem) => void;
+const listeners: Listener[] = [];
 let nextId = 1;
 
 function emit(type: ToastType, message: string, opts?: ToastOptions) {
-    listener?.({ id: nextId++, type, message, duration: opts?.duration ?? 3000 });
+    listeners[listeners.length - 1]?.({ id: nextId++, type, message, duration: opts?.duration ?? 3000 });
 }
 
 const HIDDEN_Y = -140;
@@ -50,7 +54,7 @@ export function ToastHost() {
     }, [y, opacity]);
 
     useEffect(() => {
-        listener = (t) => {
+        const listener: Listener = (t) => {
             clearTimeout(timer.current);
             setItem(t); 
             Animated.parallel([
@@ -59,8 +63,10 @@ export function ToastHost() {
             ]).start();
             timer.current = setTimeout(hide, t.duration);
         };
+        listeners.push(listener);
         return () => {
-            listener = null;
+            const index = listeners.lastIndexOf(listener);
+            if (index !== -1) listeners.splice(index, 1);
             clearTimeout(timer.current);
         };
     }, [hide, y, opacity]);

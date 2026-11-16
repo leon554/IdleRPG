@@ -1,10 +1,11 @@
-import { Pressable, PressableProps, View, ViewProps } from "react-native";
+import { Pressable, PressableProps, Text, View, ViewProps } from "react-native";
 
 type Variant = "default" | "raised" | "outline";
 
 type CardProps = ViewProps & {
     variant?: Variant;
     onPress?: PressableProps["onPress"]; 
+    label?: string;
     className?: string;
 };
 
@@ -17,11 +18,23 @@ const variantStyles: Record<Variant, string> = {
 export function Card({
     variant = "default",
     onPress,
+    label,
     className = "",
     children,
     ...rest
 }: CardProps) {
     const base = `rounded-md p-4 ${variantStyles[variant]} ${className}`;
+
+    const content = (
+        <>
+            {label ? (
+                <Text accessibilityRole="header" className="text-textPrimary text-base font-semibold">
+                    {label}
+                </Text>
+            ) : null}
+            {children}
+        </>
+    );
 
     if (onPress) {
         return (
@@ -31,14 +44,14 @@ export function Card({
                 className={`${base} active:bg-surfaceRaised`}
                 {...(rest as PressableProps)}
             >
-                {children}
+                {content}
             </Pressable>
         );
     }
 
     return (
         <View className={base} {...rest}>
-            {children}
+            {content}
         </View>
     );
 }

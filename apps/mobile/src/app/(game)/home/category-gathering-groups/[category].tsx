@@ -10,13 +10,13 @@ import { View } from 'react-native';
 import { Button } from '@/components/primitives/Button';
 import { useState } from 'react';
 import { Modal } from '@/components/primitives/Modal';
+import GatherModal from '@/components/game/GatherModal';
 
 export default function CategoryScreen() {
     const { category } = useLocalSearchParams<{ category: string }>();
     const ggsForCategory = useStore(staticDataStore, (s) => s.ggPerCategory[category]);
-    const actions = useStore(staticDataStore, (s) => s.actions);
 
-    const [openModal, setOpenModal] = useState(false)
+    const [selectedGatheringGroup, setSelectedGatheringGroup] = useState<GatheringGroup | null>(null)
 
     const ggs = ggsForCategory ?? [];
     const name = ggs[0]?.category ?? "Unknown category";
@@ -65,34 +65,23 @@ export default function CategoryScreen() {
                                 title='Gather'
                                 size="sm"
                                 variant="primary"
-                                onPress={() => setOpenModal(true)}
+                                onPress={() => setSelectedGatheringGroup(item)}
                             />
                         </View>
-                        <Modal visible={openModal} onClose={() => setOpenModal(false)}>
-                            <Text className="text-textPrimary text-lg font-medium mb-1">Actions</Text>
-                            <FlatList
-                                data={actions}
-                                keyExtractor={(action) => action.id}
-                                ItemSeparatorComponent={() => <View className="h-2" />}
-                                renderItem={({ item }) => (
-                                    <Card className="gap-0.5 flex-row items-center justify-between border p-1 px-2 rounded-md border-border"
-                                        onPress={() => {}}
-                                        variant="raised"
-                                    >
-                                        <View>
-                                            <Text className="text-textSecondary text-sm">{item.name}</Text>
-                                            <Text className="text-textMuted text-xs">
-                                                Yield {item.yield}, Quality {item.quality}, Progress: {item.progress}
-                                            </Text>
-                                        </View>
-                                        <Text className="text-primary">GP: {item.gatheringPointCost}</Text>
-                                    </Card>
-                                )}
-                            />
-                        </Modal>
                     </Card>
                 )}
             />
+            {selectedGatheringGroup && (
+                <GatherModal
+                    key={selectedGatheringGroup.id}
+                    openModal
+                    setOpenModal={(open) => {
+                        if (!open) setSelectedGatheringGroup(null)
+                    }}
+                    categoryId={category}
+                    selectedGatheringGroup={selectedGatheringGroup}
+                />
+            )}
         </Screen>
     );
 }

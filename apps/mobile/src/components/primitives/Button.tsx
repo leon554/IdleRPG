@@ -24,7 +24,7 @@ const containerStyles: Record<Variant, string> = {
 
 const textStyles: Record<Variant, string> = {
     primary: "text-onPrimary",
-    secondary: "text-textPrimary",
+    secondary: "text-textSecondary",
     outline: "text-textPrimary",
     ghost: "text-primary",
     danger: "text-background",

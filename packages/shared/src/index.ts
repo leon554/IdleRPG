@@ -53,7 +53,15 @@ export type AuthState = "Logged-Out" | "Signed-In-Email-Verified" | "Signed-In-E
 
 export type GatheringGroup = {
     id: string,
-    mainResource: ResourceDef,
+    mainResource: {
+        id: string;
+        categoryId: string;
+        itemName: string;
+        progressRequirement: number;
+        qualityRequirement: number;
+        yieldRequirement: number;
+        vendorPrice: number;
+    },
     levelRequirment: number,
     category: string,
     categoryId: string,

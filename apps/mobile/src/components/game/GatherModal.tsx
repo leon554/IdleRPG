@@ -50,7 +50,7 @@ export default function GatherModal({openModal, setOpenModal, categoryId, select
                     showValue 
                     label='Progress'
                     size="sm"
-                    variant={progress.progress >= selectedGatheringGroup.mainResource.progressRequirement ? "success" : "danger"}
+                    variant={progress.progress >= selectedGatheringGroup.mainResource.progressRequirement ? "success" : "primary"}
                     formatValue={(v, m) => `${v} / ${m}`}
                 />
                 <ProgressBar 
@@ -59,7 +59,7 @@ export default function GatherModal({openModal, setOpenModal, categoryId, select
                     showValue 
                     label='Quality'
                     size="sm"
-                    variant={progress.quality >= selectedGatheringGroup.mainResource.qualityRequirement ? "success" : "danger"}
+                    variant={progress.quality >= selectedGatheringGroup.mainResource.qualityRequirement ? "success" : "primary"}
                     formatValue={(v, m) => `${v} / ${m}`}
                 />
                 <ProgressBar 
@@ -68,7 +68,7 @@ export default function GatherModal({openModal, setOpenModal, categoryId, select
                     showValue 
                     label='Yield'
                     size="sm"
-                    variant={progress.yield >= selectedGatheringGroup.mainResource.yieldRequirement ? "success" : "danger"}
+                    variant={progress.yield >= selectedGatheringGroup.mainResource.yieldRequirement ? "success" : "primary"}
                     formatValue={(v, m) => `${v} / ${m}`}
                 />
                 <ProgressBar 

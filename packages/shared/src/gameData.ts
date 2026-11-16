@@ -67,19 +67,19 @@ export type ResourceDef = {
 export const RESOURCES = {
   copper_ore: {
     category: "mining", itemName: "Copper Ore",
-    progressRequirement: 100, qualityRequirement: 50, yieldRequirement: 1, vendorPrice: 2,
+    progressRequirement: 100, qualityRequirement: 50, yieldRequirement: 100, vendorPrice: 2,
   },
   iron_ore: {
     category: "mining", itemName: "Iron Ore",
-    progressRequirement: 250, qualityRequirement: 120, yieldRequirement: 1, vendorPrice: 5,
+    progressRequirement: 250, qualityRequirement: 120, yieldRequirement: 100, vendorPrice: 5,
   },
   stone: {
     category: "mining", itemName: "Stone",
-    progressRequirement: 50, qualityRequirement: 20, yieldRequirement: 1, vendorPrice: 1,
+    progressRequirement: 50, qualityRequirement: 20, yieldRequirement: 100, vendorPrice: 1,
   },
   oak_log: {
     category: "woodcutting", itemName: "Oak Log",
-    progressRequirement: 100, qualityRequirement: 50, yieldRequirement: 1, vendorPrice: 2,
+    progressRequirement: 100, qualityRequirement: 50, yieldRequirement: 100, vendorPrice: 2,
   },
 } satisfies Record<string, ResourceDef>;
 
@@ -164,16 +164,16 @@ export type EquipmentId = keyof typeof EQUIPMENT;
 
 export type ActionDef = {
   name: string;
-  yield: number;
-  quality: number;
-  progress: number;
+  yieldMultiplier: number;
+  qualityMultiplier: number;
+  progressMultiplier: number;
   gatheringPointCost: number;
 };
 
 export const ACTIONS = {
-  basic_strike:   { name: "Basic Strike",   yield: 0, quality: 0,  progress: 20, gatheringPointCost: 20 },
-  careful_strike: { name: "Careful Strike", yield: 0, quality: 15, progress: 5, gatheringPointCost: 20 },
-  bountiful_hit:  { name: "Bountiful Hit",  yield: 1, quality: 0,  progress: 10, gatheringPointCost: 20 },
+  basic_strike:   { name: "Basic Strike",   yieldMultiplier: 1.3, qualityMultiplier: 0.6,  progressMultiplier: 2, gatheringPointCost: 20 },
+  careful_strike: { name: "Careful Strike", yieldMultiplier: 1.5, qualityMultiplier: 1.5, progressMultiplier: 1.5, gatheringPointCost: 30 },
+  bountiful_hit:  { name: "Bountiful Hit",  yieldMultiplier: 1, qualityMultiplier: 1,  progressMultiplier: 3, gatheringPointCost: 40 },
 } satisfies Record<string, ActionDef>;
 
 export type ActionId = keyof typeof ACTIONS;

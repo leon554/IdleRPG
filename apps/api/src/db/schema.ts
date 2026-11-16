@@ -174,10 +174,10 @@ export const actions = pgTable(
   {
     id: text().primaryKey(),
     name: text().notNull(),
-    yield: integer().notNull().default(0),
-    quality: integer().notNull().default(0),
-    progress: integer().notNull().default(0),
-    gatheringPointCost: integer().notNull().default(0)
+    yieldMultiplier: doublePrecision().notNull().default(0),
+    qualityMultiplier: doublePrecision().notNull().default(0),
+    progressMultiplier: doublePrecision().notNull().default(0),
+    gatheringPointCost: doublePrecision().notNull().default(0)
   },
   (t) => [unique("actions_name_unique").on(t.name)],
 );

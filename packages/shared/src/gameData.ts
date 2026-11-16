@@ -156,12 +156,13 @@ export type ActionDef = {
   yield: number;
   quality: number;
   progress: number;
+  gatheringPointCost: number;
 };
 
 export const ACTIONS = {
-  basic_strike:   { name: "Basic Strike",   yield: 0, quality: 0,  progress: 20 },
-  careful_strike: { name: "Careful Strike", yield: 0, quality: 15, progress: 5 },
-  bountiful_hit:  { name: "Bountiful Hit",  yield: 1, quality: 0,  progress: 10 },
+  basic_strike:   { name: "Basic Strike",   yield: 0, quality: 0,  progress: 20, gatheringPointCost: 20 },
+  careful_strike: { name: "Careful Strike", yield: 0, quality: 15, progress: 5, gatheringPointCost: 20 },
+  bountiful_hit:  { name: "Bountiful Hit",  yield: 1, quality: 0,  progress: 10, gatheringPointCost: 20 },
 } satisfies Record<string, ActionDef>;
 
 export type ActionId = keyof typeof ACTIONS;

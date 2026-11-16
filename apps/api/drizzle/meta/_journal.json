@@ -15,6 +15,13 @@
       "when": 1794092376390,
       "tag": "0001_gifted_ulik",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794791616161,
+      "tag": "0002_aberrant_sinister_six",
+      "breakpoints": true
     }
   ]
 }

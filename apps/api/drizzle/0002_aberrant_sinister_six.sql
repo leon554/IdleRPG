@@ -1,0 +1,1 @@
+ALTER TABLE "actions" ADD COLUMN "gatheringPointCost" integer DEFAULT 0 NOT NULL;

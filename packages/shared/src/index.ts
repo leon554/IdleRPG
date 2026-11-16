@@ -93,3 +93,12 @@ export type Recipe = {
     }[]
     stats: Omit<EquipmentStats, "equipmentId">[]
 }
+
+export type Action = {
+    id: string;
+    name: string;
+    yield: number;
+    quality: number;
+    progress: number;
+    gatheringPointCost: number;
+};

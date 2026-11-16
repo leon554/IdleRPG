@@ -14,4 +14,22 @@ export namespace Util{
         }
         return map;
     }
+    export const createStaticCache = <T>(loader: () => Promise<T>) => {
+        let cached: Promise<T> | null = null;
+
+        return {
+            get: (): Promise<T> => {
+                if (!cached) {
+                    cached = loader().catch((err) => {
+                        cached = null;
+                        throw err;
+                    });
+                }
+                return cached;
+            },
+            invalidate: (): void => {
+                cached = null;
+            },
+        };
+    };
 }

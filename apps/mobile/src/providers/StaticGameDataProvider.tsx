@@ -1,5 +1,5 @@
 import { request,} from "@/lib/api-service-layer/util";
-import { GatheringGroup, Recipe, } from "@idlerpg/shared";
+import { Action, GatheringGroup, Recipe, } from "@idlerpg/shared";
 import {createContext, useContext, useEffect, useMemo, useState, type ReactNode,} from "react";
 import { useAuth } from "./AuthProvider";
 import { toast } from "@/components/primitives/Toast";
@@ -13,6 +13,7 @@ type GameDataContextType = {
     ggPerCategory: Record<string, GatheringGroup[]>
     loading: boolean,
     recipes: Record<string, Recipe[]>
+    actions: Action[]
 }; 
 
 const gameDataContext = createContext<GameDataContextType | null>(null);
@@ -24,6 +25,7 @@ export function GameDataProvider({ children }: { children: ReactNode }) {
     const ggPerCategory = useMemo(() => GameDataUtil.getGGPerCategoryMap(gatheringGroups), [gatheringGroups])
     
     const [recipes, setRecipes] = useState<Record<string, Recipe[]>>({})
+    const [actions, setAcions] = useState<Action[]>([])
     
     const auth = useAuth()
 
@@ -31,13 +33,16 @@ export function GameDataProvider({ children }: { children: ReactNode }) {
         if (auth.isLoading || !auth.user) return;
 
         const fetchGG = async () => {
-            setLoading(true);
+            setLoading(true);   
             try {
                 const gg = await request<GatheringGroup[]>("/gamedata/gathering-groups");
                 setGatheringGroups(gg);
 
                 const recipeData = await request<Record<string, Recipe[]>>("/gamedata/recipes");
                 setRecipes(recipeData)
+
+                const actionData = await request<Action[]>("/gamedata/actions");
+                setAcions(actionData)
             } catch (error) {
                 toast.error(errorMessage(error));
             } finally {
@@ -49,8 +54,8 @@ export function GameDataProvider({ children }: { children: ReactNode }) {
     }, [auth.isLoading, auth.user]);
 
     const value = useMemo(
-        () => ({ gatheringGroups, ggPerCategory, loading, recipes}),
-        [gatheringGroups, ggPerCategory, loading, recipes]
+        () => ({ gatheringGroups, ggPerCategory, loading, recipes, actions}),
+        [gatheringGroups, ggPerCategory, loading, recipes, actions]
     );
 
     return <gameDataContext.Provider value={value}>{children}</gameDataContext.Provider>;

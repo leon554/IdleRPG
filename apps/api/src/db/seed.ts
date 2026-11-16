@@ -33,8 +33,8 @@ async function seed() {
             .onConflictDoUpdate({ target: actions.id, set: updateAllExcept(actions, ["id"]) });
 
         await tx.insert(resources)
-            .values(Object.entries(RESOURCES).map(([id, { category, name, ...rest }]) => ({
-                id, categoryId: category, itemName: name, ...rest,
+            .values(Object.entries(RESOURCES).map(([id, { category, itemName, ...rest }]) => ({
+                id, categoryId: category, itemName, ...rest,
             })))
           .onConflictDoUpdate({ target: resources.id, set: updateAllExcept(resources, ["id"]) });
 

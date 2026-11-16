@@ -95,9 +95,9 @@ export default function GatherModal({openModal, setOpenModal, categoryId, select
                                 }
                                 setUsedGP(p => p += item.gatheringPointCost)
                                 setProgress(p => ({
-                                    progress: p.progress + item.progress,
-                                    quality: p.quality + item.quality,
-                                    yield: p.yield + item.yield
+                                    progress: p.progress + item.progressMultiplier * stats.progress,
+                                    quality: p.quality + item.qualityMultiplier * stats.quality,
+                                    yield: p.yield + item.yieldMultiplier * stats.yield
                                 }))
                                 setUsedActions(p => [...p, item])
                             }}
@@ -106,7 +106,7 @@ export default function GatherModal({openModal, setOpenModal, categoryId, select
                             <View>
                                 <Text className="text-textSecondary text-sm">{item.name}</Text>
                                 <Text className="text-textMuted text-xs">
-                                    Yield {item.yield}, Quality {item.quality}, Progress: {item.progress}
+                                    Yield {item.yieldMultiplier * stats.yield}, Quality {item.qualityMultiplier * stats.quality}, Progress: {item.progressMultiplier * stats.progress}
                                 </Text>
                             </View>
                             <Text className="text-primary">GP: {item.gatheringPointCost}</Text>

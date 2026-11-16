@@ -19,7 +19,7 @@ const baseCategoryStats = {
   baseProgress: 10,
   baseQuality: 10,
   baseYield: 10,
-  baseGatheringPoints: 100,
+  baseGatheringPoints: 150,
 }
 
 export type EquipmentStatsDef = {

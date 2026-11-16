@@ -105,9 +105,9 @@ export type Recipe = {
 export type Action = {
     id: string;
     name: string;
-    yield: number;
-    quality: number;
-    progress: number;
+    yieldMultiplier: number;
+    qualityMultiplier: number;
+    progressMultiplier: number;
     gatheringPointCost: number;
 };
 

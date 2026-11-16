@@ -16,6 +16,7 @@ const actionsCache = Util.createStaticCache(() =>
 actionRouter.get("/actions", async (_req, res) => {
   const data = await actionsCache.get();
 
-  res.set("Cache-Control", "public, max-age=3600");
+  // Revalidate on every request; Express's ETag makes unchanged responses a cheap 304.
+  res.set("Cache-Control", "no-cache");
   res.status(200).json(data);
 });

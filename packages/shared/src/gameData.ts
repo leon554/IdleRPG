@@ -130,6 +130,9 @@ export const EQUIPMENT = {
     stats: {
       common: { progress: 10, quality: 5, yield: 1, gatheringPoints: 1 },
       rare:   { progress: 14, quality: 8, yield: 1.2, gatheringPoints: 2 },
+      epic: { progress: 10, quality: 5, yield: 1, gatheringPoints: 1 },
+      legendary:   { progress: 14, quality: 8, yield: 1.2, gatheringPoints: 2 },
+      mythical: { progress: 10, quality: 5, yield: 1, gatheringPoints: 1 },
     },
   },
   bronze_axe: {

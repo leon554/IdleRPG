@@ -6,3 +6,8 @@ export function getAuthState(user: PublicUser | null): AuthState{
     if(user.emailVerifiedAt) return "Signed-In-Email-Verified"
     return "Signed-In-Email-Not-Verified"
 }
+
+export function capitliseFirst(word: string){
+    if(!word) return ""
+    return word[0].toUpperCase() + word.slice(1)
+}

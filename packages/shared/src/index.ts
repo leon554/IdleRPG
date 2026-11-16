@@ -63,14 +63,33 @@ export type GatheringGroup = {
     }[]
 }
 
+export type Equipment = {
+    id: string;
+    name: string;
+    categoryId: string;
+    typeId: string;
+    levelRequirement: number;
+    vendorPrice: number;
+};
+
+export type EquipmentStats = {
+    equipmentId: string;
+    rarityId: string;
+    progress: number;
+    quality: number;
+    yield: number;
+    gatheringPoints: number;
+}
+
 export type Recipe = {
     recipe: RecipeDef,
     categoryName: string,
     categoryId: string,
-    outputEquipment: EquipmentDef,
+    outputEquipment: Equipment,
     requiredResources: {
         resourceId: string,
         name: string,
         amount: number
     }[]
+    stats: Omit<EquipmentStats, "equipmentId">[]
 }

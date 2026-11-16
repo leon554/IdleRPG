@@ -11,6 +11,7 @@ import { Text } from "react-native";
 import Entypo from '@expo/vector-icons/Entypo';
 import { router } from 'expo-router'
 import { useGameData } from '@/providers/StaticGameDataProvider'
+import { capitliseFirst } from '@/auth/util'
 
 export default function Crafting() {
     const gameData = useGameData()
@@ -25,10 +26,10 @@ export default function Crafting() {
                 renderItem={({ item }) => {
                     return(
                         <Card className='flex-row items-center justify-between'
-                            onPress={() => router.push(`/home/category-gathering-groups/${item[0]}`)}
+                            onPress={() => router.push(`/home/category-recipes/${item[0]}`)}
                         >
                             <Text className='text-textSecondary'>
-                                {item[0]}
+                                {capitliseFirst(item[0])}
                             </Text>
                             <Entypo name="chevron-right" size={24} className='text-textSecondary'/>
                         </Card>

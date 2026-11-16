@@ -4,6 +4,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { toast } from "@/components/primitives/Toast";
 import { errorMessage } from "@/lib/api-service-layer/errors";
 import { refreshAll, resetAllStores } from "@/stores/refresh";
+import { loadStaticData } from "@/stores/staticData";
 
 export function GameBootstrap() {
     const auth = useAuth();
@@ -15,6 +16,7 @@ export function GameBootstrap() {
             resetAllStores();
             return;
         }
+        loadStaticData().catch((error) => toast.error(errorMessage(error)));
         refreshAll().catch((error) => toast.error(errorMessage(error)));
     }, [auth.isLoading, auth.user]);
 

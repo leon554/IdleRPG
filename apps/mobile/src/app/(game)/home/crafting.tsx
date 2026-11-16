@@ -10,17 +10,18 @@ import { Card } from '@/components/primitives/Card'
 import { Text } from "react-native";
 import Entypo from '@expo/vector-icons/Entypo';
 import { router } from 'expo-router'
-import { useStaticGameData } from '@/providers/StaticGameDataProvider'
+import { useStore } from '@/lib/store'
+import { staticDataStore } from '@/stores/staticData'
 import { capitliseFirst } from '@/auth/util'
 
 export default function Crafting() {
-    const gameData = useStaticGameData()
+    const recipes = useStore(staticDataStore, (s) => s.recipes)
 
     return (
         <Screen className="gap-4">
             <PageHeader name="Crafting" onPrev={() => router.replace("/(game)/home")}/>
             <FlatList
-                data={Object.entries(gameData?.recipes ?? [])}
+                data={Object.entries(recipes)}
                 keyExtractor={(item) => item[0]}
                 contentContainerStyle={{ gap: 12 }}
                 renderItem={({ item }) => {

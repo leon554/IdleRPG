@@ -4,7 +4,8 @@ import type { GatheringGroup } from '@idlerpg/shared';
 import { Screen } from '@/components/primitives/Screen';
 import PageHeader from '@/components/primitives/PageHeader';
 import { Card } from '@/components/primitives/Card';
-import { useStaticGameData } from '@/providers/StaticGameDataProvider';
+import { useStore } from '@/lib/store';
+import { staticDataStore } from '@/stores/staticData';
 import { View } from 'react-native';
 import { Button } from '@/components/primitives/Button';
 import { useState } from 'react';
@@ -12,11 +13,12 @@ import { Modal } from '@/components/primitives/Modal';
 
 export default function CategoryScreen() {
     const { category } = useLocalSearchParams<{ category: string }>();
-    const gameData = useStaticGameData();
+    const ggsForCategory = useStore(staticDataStore, (s) => s.ggPerCategory[category]);
+    const actions = useStore(staticDataStore, (s) => s.actions);
 
     const [openModal, setOpenModal] = useState(false)
 
-    const ggs = gameData?.ggPerCategory[category] ?? [];
+    const ggs = ggsForCategory ?? [];
     const name = ggs[0]?.category ?? "Unknown category";
 
     return (
@@ -69,7 +71,7 @@ export default function CategoryScreen() {
                         <Modal visible={openModal} onClose={() => setOpenModal(false)}>
                             <Text className="text-textPrimary text-lg font-medium mb-1">Actions</Text>
                             <FlatList
-                                data={gameData?.actions}
+                                data={actions}
                                 keyExtractor={(action) => action.id}
                                 ItemSeparatorComponent={() => <View className="h-2" />}
                                 renderItem={({ item }) => (

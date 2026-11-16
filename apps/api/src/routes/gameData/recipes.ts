@@ -1,4 +1,3 @@
-
 import { requireAuth } from "../../middleware/requireAuth.js";
 import { db } from "../../db/index.js";
 import { eq, and } from "drizzle-orm";
@@ -34,25 +33,13 @@ recipeRouter.get("/recipes", twoAttempsASecondPerIpLimiter, requireAuth, async (
         .innerJoin(resources, eq(resources.id, requiredResources.resourceId)),
     ]);
 
-    const requiredResourcesPerRecipe: Map<string, Omit<(typeof requiredRows)[number], "recipeId">[]> = new Map()
-    const statsPerRecipe: Map<string, Omit<(typeof equipmentStatsRows)[number], "equipmentId">[]> = new Map()
-
-    requiredRows.forEach(r => {
-        const prev = requiredResourcesPerRecipe.get(r.recipeId)
-        const newR = Util.removeObjectKey(r, "recipeId")
-        requiredResourcesPerRecipe.set(r.recipeId, prev ? [...prev, newR] : [newR])
-    })
-
-    equipmentStatsRows.forEach(r => {
-        const prev = statsPerRecipe.get(r.equipmentId)
-        const newR = Util.removeObjectKey(r, "equipmentId")
-        statsPerRecipe.set(r.equipmentId, prev ? [...prev, newR] : [newR])
-    })
+    const requiredPerRecipe = Util.groupByKey(requiredRows, "recipeId");
+    const statsPerEquipment = Util.groupByKey(equipmentStatsRows, "equipmentId");
 
     const output = recipeRows.map(r => ({
         ...r, 
-        requiredResources: requiredResourcesPerRecipe.get(r.recipe.id) ?? [],
-        stats: statsPerRecipe.get(r.recipe.outputEquipmentId) ?? []
+        requiredResources: requiredPerRecipe.get(r.recipe.id) ?? [],
+        stats: statsPerEquipment.get(r.recipe.outputEquipmentId) ?? []
     }))
     const groupedOutput = Object.groupBy(output, (r) => r.categoryId);
 

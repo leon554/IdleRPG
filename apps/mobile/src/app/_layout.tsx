@@ -5,22 +5,21 @@ import { colors } from '@/theme';
 import { AuthProvider } from '@/providers/AuthProvider';
 import { ToastHost } from '@/components/primitives/Toast';
 import { StaticGameDataProvider } from '@/providers/StaticGameDataProvider';
-import { GameDataProvider } from '@/providers/GameDataProvider';
+import { GameBootstrap } from '@/providers/GameBootstrap';
 
 export default function RootLayout() {
   return (
     <AuthProvider>
       <StaticGameDataProvider>
-        <GameDataProvider>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: colors.background },
-            }}
-          />
-          <ToastHost />
-          <StatusBar style="light" />
-        </GameDataProvider>
+        <GameBootstrap />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: colors.background },
+          }}
+        />
+        <ToastHost />
+        <StatusBar style="light" />
       </StaticGameDataProvider>
     </AuthProvider>
   );

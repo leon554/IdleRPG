@@ -40,6 +40,8 @@ export const RARITIES = {
 } satisfies Record<string, RarityDef>;
 export type RarityId = keyof typeof RARITIES;
 
+export const CALCULATE_RARITIES_ODDS_SUM = (rarities: Record<string, RarityDef>) => Object.values(rarities).reduce((a, c) => a + c.odds, 0)
+
 export const CATEGORIES = {
   mining:      { name: "Mining",      type: "gathering", xpRate: 10, ...baseCategoryStats },
   woodcutting: { name: "Woodcutting", type: "gathering", xpRate: 10, ...baseCategoryStats},

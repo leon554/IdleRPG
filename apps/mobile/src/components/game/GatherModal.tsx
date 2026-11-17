@@ -1,14 +1,16 @@
 import { View, Text, FlatList, ScrollView } from 'react-native'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Modal } from '../primitives/Modal'
 import { Card } from '../primitives/Card'
 import { useStore } from '@/lib/store'
 import { staticDataStore } from '@/stores/staticData'
 import { statsStore } from '@/stores/stats'
 import { ProgressBar } from '../primitives/ProgressBar'
-import { Action, GatheringGroup } from '@idlerpg/shared'
+import { Action, GatheringGroup} from '@idlerpg/shared'
+import { RARITIES, CALCULATE_RARITIES_ODDS_SUM } from '@idlerpg/shared/src/gameData'
 import { Button } from '../primitives/Button'
 import { toast } from '../primitives/Toast'
+import { GameDataUtil } from '@/util/game-data-util'
 
 interface Props{
     openModal: boolean
@@ -28,6 +30,16 @@ export default function GatherModal({openModal, setOpenModal, categoryId, select
 
     const [usedGP, setUsedGP] = useState(0)
     const [usedActions, setUsedActions] = useState<Action[]>([])
+    const rarities = GameDataUtil.applyRarityMultiplier(RARITIES, (progress.quality/selectedGatheringGroup.mainResource.qualityRequirement))
+
+    useEffect(() => {
+        if(usedGP >= stats.gatheringPoints && progress.progress < selectedGatheringGroup.mainResource.progressRequirement){
+            toast.error("Failed", {duration: 1500})
+            reset()
+            return
+        }
+
+    }, [usedGP])
 
     function reset(){
         setProgress({
@@ -37,6 +49,24 @@ export default function GatherModal({openModal, setOpenModal, categoryId, select
         })
         setUsedActions([])
         setUsedGP(0)
+    }
+
+    function calculateYieldMultiplie(){
+        return `${Math.floor((progress.yield/selectedGatheringGroup.mainResource.yieldRequirement)/0.25)}`
+    }
+
+    function useAction(item: Action){
+        if(usedGP + item.gatheringPointCost > stats.gatheringPoints){
+            toast.warning("Not enough gathering points for this action!", {duration: 1500})
+            return
+        }
+        setUsedGP(p => p += item.gatheringPointCost)
+        setProgress(p => ({
+            progress: p.progress + item.progressMultiplier * stats.progress,
+            quality: p.quality + item.qualityMultiplier * stats.quality,
+            yield: p.yield + item.yieldMultiplier * stats.yield
+        }))
+        setUsedActions(p => [...p, item])
     }
     
 
@@ -66,7 +96,7 @@ export default function GatherModal({openModal, setOpenModal, categoryId, select
                     value={progress.yield} 
                     max={selectedGatheringGroup.mainResource.yieldRequirement} 
                     showValue 
-                    label='Yield'
+                    label={`Yield ${calculateYieldMultiplie()}x`}
                     size="sm"
                     variant={progress.yield >= selectedGatheringGroup.mainResource.yieldRequirement ? "success" : "primary"}
                     formatValue={(v, m) => `${v} / ${m}`}
@@ -81,6 +111,26 @@ export default function GatherModal({openModal, setOpenModal, categoryId, select
                 />
             </Card>
             <View className='gap-1'>
+                <Text className="text-textSecondary text-sm">Odds</Text>
+                <ScrollView
+                    className="max-h-20"
+                    contentContainerClassName="flex-row flex-wrap gap-2 justify-between"
+                    showsVerticalScrollIndicator={false}
+                    nestedScrollEnabled
+                >
+                    {Object.values(rarities).map((item) => (
+                         <View className='flex-row items-center gap-1.5'>
+                            <View className='w-3 h-3 rounded-md' style={{backgroundColor: `${item.color}`}}>
+
+                            </View>
+                            <Text className="text-textSecondary text-xs">
+                                {GameDataUtil.roundToSignificant(item.odds/CALCULATE_RARITIES_ODDS_SUM(rarities)*100)}%
+                            </Text>
+                        </View>
+                    ))}
+                </ScrollView> 
+            </View>
+            <View className='gap-1'>
                 <Text className="text-textSecondary text-sm">Actions</Text>
                 <FlatList
                     data={actions}
@@ -88,19 +138,7 @@ export default function GatherModal({openModal, setOpenModal, categoryId, select
                     ItemSeparatorComponent={() => <View className="h-2" />}
                     renderItem={({ item }) => (
                         <Card className="gap-0.5 flex-row items-center justify-between p-1 px-2 rounded-md"
-                            onPress={() => {
-                                if(usedGP + item.gatheringPointCost > stats.gatheringPoints){
-                                    toast.warning("Not enough gathering points for this action!", {duration: 1500})
-                                    return
-                                }
-                                setUsedGP(p => p += item.gatheringPointCost)
-                                setProgress(p => ({
-                                    progress: p.progress + item.progressMultiplier * stats.progress,
-                                    quality: p.quality + item.qualityMultiplier * stats.quality,
-                                    yield: p.yield + item.yieldMultiplier * stats.yield
-                                }))
-                                setUsedActions(p => [...p, item])
-                            }}
+                            onPress={() => useAction(item)}
                             variant="default"
                         >
                             <View>
@@ -117,21 +155,24 @@ export default function GatherModal({openModal, setOpenModal, categoryId, select
             <View className='gap-1'>
                 <Text className="text-textSecondary text-sm">Rotation</Text>
                 <Card>
-                    <ScrollView
-                        className="max-h-20"
-                        contentContainerClassName="flex-row flex-wrap gap-2"
-                        showsVerticalScrollIndicator={false}
-                        nestedScrollEnabled
-                    >
-                        {usedActions.map((action, index) => (
-                            <Text
-                                key={`${index}-${action.id}`}
-                                className="grow text-center text-textMuted text-xs bg-surfaceRaised px-2 rounded-md"
-                            >
-                                {index + 1}. {action.name}
-                            </Text>
-                        ))}
-                    </ScrollView>
+                    {usedActions.length != 0 ?
+                        <ScrollView
+                            className="max-h-20"
+                            contentContainerClassName="flex-row flex-wrap gap-2"
+                            showsVerticalScrollIndicator={false}
+                            nestedScrollEnabled
+                        >
+                            {usedActions.map((action, index) => (
+                                <Text
+                                    key={`${index}-${action.id}`}
+                                    className="grow text-center text-textMuted text-xs bg-surfaceRaised px-2 rounded-md"
+                                >
+                                    {index + 1}. {action.name}
+                                </Text>
+                            ))}
+                        </ScrollView> :
+                        <Text className="text-textMuted text-xs">Select an action...</Text>
+                    }
                 </Card>
             </View>
             <View className='flex-row gap-3'>

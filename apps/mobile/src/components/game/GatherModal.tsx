@@ -154,26 +154,24 @@ export default function GatherModal({openModal, setOpenModal, categoryId, select
             </View>
             <View className='gap-1'>
                 <Text className="text-textSecondary text-sm">Rotation</Text>
-                <Card>
-                    {usedActions.length != 0 ?
-                        <ScrollView
-                            className="max-h-20"
-                            contentContainerClassName="flex-row flex-wrap gap-2"
-                            showsVerticalScrollIndicator={false}
-                            nestedScrollEnabled
-                        >
-                            {usedActions.map((action, index) => (
-                                <Text
-                                    key={`${index}-${action.id}`}
-                                    className="grow text-center text-textMuted text-xs bg-surfaceRaised px-2 rounded-md"
-                                >
-                                    {index + 1}. {action.name}
-                                </Text>
-                            ))}
-                        </ScrollView> :
-                        <Text className="text-textMuted text-xs">Select an action...</Text>
-                    }
-                </Card>
+                {usedActions.length != 0 ?
+                    <ScrollView
+                        className="max-h-20"
+                        contentContainerClassName="flex-row flex-wrap gap-2"
+                        showsVerticalScrollIndicator={false}
+                        nestedScrollEnabled
+                    >
+                        {usedActions.map((action, index) => (
+                            <Text
+                                key={`${index}-${action.id}`}
+                                className="grow text-center text-textMuted text-xs bg-surfaceRaised px-2 rounded-md"
+                            >
+                                {index + 1}. {action.name}
+                            </Text>
+                        ))}
+                    </ScrollView> :
+                    <Text className="text-textMuted text-xs">Select an action...</Text>
+                }
             </View>
             <View className='flex-row gap-3'>
                 <Button

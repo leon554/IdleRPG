@@ -70,3 +70,20 @@ export const arr = <T>(item: Validator<T>, maxLength = 100): Validator<T[]> => (
     return out;
 };
 
+export const int = (min: number, max: number): Validator<number> => (v) =>
+    typeof v === "number" && Number.isInteger(v) && v >= min && v <= max ? v : undefined;
+
+export const arrayOf = <T,>(item: Validator<T>, min: number, max: number): Validator<T[]> => (v) => {
+    if (!Array.isArray(v) || v.length < min || v.length > max) return undefined;
+    const out: T[] = [];
+    for (const x of v) {
+        const r = item(x);
+        if (r === undefined) return undefined;
+        out.push(r);
+    }
+    return out;
+};
+
+export const object = <S extends Schema>(schema: S): Validator<Infer<S>> => (v) =>
+    validate(schema, v) ?? undefined;
+

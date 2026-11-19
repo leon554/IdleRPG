@@ -1,7 +1,7 @@
 import { Router, type Response } from "express";
 import { db } from "../../db/index.js";
 import { taskAction, taskRecipeInput } from "../../db/schema.js";
-import { getAuthUser } from "../../middleware/requireAuth.js";
+import { getAuthUser, requireAuth } from "../../middleware/requireAuth.js";
 import { withBody } from "../../validation/validate.js";
 import { craftTaskSchema, gatherTaskSchema } from "../../validation/schemas.js";
 import type { GatheringGroup, TaskTarget } from "@idlerpg/shared";
@@ -9,17 +9,17 @@ import type { TaskRequirements } from "../../types/task.js";
 import { fail } from "../../util/generalUtil/outcome.js";
 import { getAvailableResources,  getGatheringRequirements,  getInventory,  getRecipeRequirements,  insertTask,  validateInputsAmtMatchRecipeRequirements,  validatePlayerMeetsRequirements,  validateTaskExistence,} from "../../services/task.service.js";
 
-const router = Router();
+export const taskRouter = Router();
 
-router.post(
+taskRouter.post(
     "/tasks/gather",
     withBody(gatherTaskSchema, (body, _req, res) =>
         sendCreatedTask(res, { type: "gather", gatheringGroupId: body.gatheringGroupId }, body.actionIds),
     ),
 );
 
-router.post(
-    "/tasks/craft",
+taskRouter.post(
+    "/tasks/craft", requireAuth,
     withBody(craftTaskSchema, (body, _req, res) =>
         sendCreatedTask(
             res,
@@ -102,5 +102,3 @@ const sendCreatedTask = async (res: Response, target: TaskTarget, actionIds: str
         throw err; 
     }
 };
-
-export default router;

@@ -117,3 +117,9 @@ export type CategoryStats = {
     yield: number;
     gatheringPoints: number;
 };
+
+export type RecipeInput = { resourceId: string; rarityId: string };
+
+export type TaskTarget =
+    | { type: "gather"; gatheringGroupId: string }
+    | { type: "craft"; recipeId: string; craftCount: number; inputs: RecipeInput[] };

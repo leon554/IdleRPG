@@ -10,5 +10,10 @@ activeTaskRouter.get("/tasks/active-task", requireAuth, async (_req, res) => {
     const activeTask = await getActiveTask(user.id);
 
     if (!activeTask) return res.status(404).json({ error: "You have no active task" });
+
+    if(activeTask.taskType == "gathering"){
+        
+    }
+    
     return res.status(200).json(activeTask);
 });

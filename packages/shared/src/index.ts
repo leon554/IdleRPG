@@ -123,3 +123,46 @@ export type RecipeInput = { resourceId: string; rarityId: string };
 export type TaskTarget =
     | { type: "gather"; gatheringGroupId: string }
     | { type: "craft"; recipeId: string; craftCount: number; inputs: RecipeInput[] };
+
+export type TaskActionEntry = Action & { position: number };
+
+export type ActiveTaskRecipe = {
+    id: string;
+    name: string;
+    categoryId: string;
+    outputEquipmentId: string;
+    levelRequirement: number;
+};
+
+export type ActiveTaskRequiredResource = {
+    resourceId: string;
+    name: string;
+    amount: number;
+};
+
+type ActiveTaskBase = {
+    id: string;
+    userId: string;
+    craftCount: number | null;
+    completedCount: number;
+    startTime: Date;
+    lastClaimedAt: Date;
+    actions: TaskActionEntry[];
+};
+
+export type GatherActiveTask = ActiveTaskBase & {
+    taskType: "gathering";
+    gatheringGroupId: string;
+    recipeId: null;
+};
+
+export type CraftActiveTask = ActiveTaskBase & {
+    taskType: "crafting";
+    gatheringGroupId: null;
+    recipeId: string;
+    recipe: ActiveTaskRecipe;
+    requiredResources: ActiveTaskRequiredResource[];
+    inputs: RecipeInput[];
+};
+
+export type ActiveTask = GatherActiveTask | CraftActiveTask;

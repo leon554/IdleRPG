@@ -3,8 +3,7 @@ import { recipeRouter } from "./recipes.js";
 import { gatheringGroupRouter } from "./gatheringGroups.js";
 import { actionRouter } from "./actions.js";
 import { statsRouter } from "./stats.js";
-import { taskRouter } from "./task.js";
-import { activeTaskRouter } from "./active-task.js";
+import { taskRouter } from "../../modules/task/task.routes.js";
 
 
 export const gameDateRouter = Router()
@@ -14,4 +13,3 @@ gameDateRouter.use(gatheringGroupRouter)
 gameDateRouter.use(actionRouter)
 gameDateRouter.use(statsRouter)
 gameDateRouter.use(taskRouter)
-gameDateRouter.use(activeTaskRouter)

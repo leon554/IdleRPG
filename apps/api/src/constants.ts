@@ -11,5 +11,4 @@ export const SESSION_EXPIRATION = 1000 * 60 * 60 * 24 * 30
 export const REFRESH_AFTER = 1000 * 60 * 60 * 24; 
 export const TOKEN_LENGTH = 43;      
 export const MAX_EMAIL_CODE_ATTEMPS = 5  
-export const MAX_TASK_ACTIONS = 20;
 export const TASK_DELAY = 8

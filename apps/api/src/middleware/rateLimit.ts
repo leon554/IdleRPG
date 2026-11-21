@@ -1,4 +1,5 @@
 import type { Request, RequestHandler, Response } from "express"
+import { tooManyRequests } from "../shared/errors.js"
 
 type Entry = {count: number, resetAt: number}
 
@@ -34,7 +35,7 @@ export function rateLimit(options: RateLimitOption): RequestHandler {
 
         if (entry.count >= options.maxRequests) {
             res.set("Retry-After", String(Math.ceil((entry.resetAt - now) / 1000)));
-            return res.status(429).json({ error: "too_many_attempts" });
+            throw tooManyRequests();
         }
 
         entry.count++;

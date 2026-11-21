@@ -1,17 +1,34 @@
+import type { ErrorCode as ApiErrorCode } from "@idlerpg/shared";
 import { ApiError } from "./util";
 
 const MESSAGES = {
+    // general
     internal_error: "Something went wrong on our side.",
+    unauthorized: "Your session has expired. Please log in again.",
+    invalid_input: "Some of the details sent were invalid.",
+    too_many_attempts: "Too many attempts for this code please generate another code",
+
+    // auth
     email_taken: "Email is already in use. Log in instead.",
     resend_cooldown: "Please wait until sending a new email code",
     wrong_code: "Incorrect code try again",
-    too_many_attempts: "Too many attempts for this code please generate another code",
     code_expired: "Email cope has expired please generate a new one",
     invalid_credentials: "Credentials are wrong check for any spelling errors",
-    already_verified: "Email is allready verified"
-} as const satisfies Record<string, string>;
+    already_verified: "Email is allready verified",
 
-export type ErrorCode = keyof typeof MESSAGES;
+    // tasks
+    task_already_active: "You already have an active task.",
+    no_active_task: "You have no active task.",
+    action_not_found: "One or more of those actions don't exist.",
+    gathering_group_not_found: "That gathering spot doesn't exist.",
+    recipe_not_found: "That recipe doesn't exist.",
+    requirements_not_met: "You don't meet the requirements for this task.",
+    invalid_recipe_inputs: "Pick exactly one rarity for each required resource.",
+    inventory_not_found: "Your inventory couldn't be found.",
+    not_enough_resources: "You don't have enough resources for that many crafts.",
+} as const satisfies Record<ApiErrorCode, string>;
+
+export type ErrorCode = ApiErrorCode | "network_error" | "timeout";
 
 export function errorMessage(e: unknown): string {
     if (e instanceof ApiError) {

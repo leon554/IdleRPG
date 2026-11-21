@@ -1,6 +1,7 @@
 import { EquipmentDef, RecipeDef, ResourceDef } from "./gameData.js";
 
 export * from "./gameData.js"
+export * from "./errors.js"
 
 export type HealthResponse = {
     status: 'ok' | 'error';

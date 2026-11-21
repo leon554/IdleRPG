@@ -6,13 +6,14 @@ import { withBody } from "../../validation/validate.js";
 import { craftTaskSchema, gatherTaskSchema } from "../../validation/schemas.js";
 import type { GatheringGroup, TaskTarget } from "@idlerpg/shared";
 import type { TaskRequirements } from "../../types/task.js";
-import { fail } from "../../util/generalUtil/outcome.js";
+import { badRequest, conflict, notFound } from "../../shared/errors.js";
+import { isUniqueViolation } from "../../errorHandler.js";
 import { getAvailableResources,  getGatheringRequirements,  getInventory,  getRecipeRequirements,  insertTask,  validateInputsAmtMatchRecipeRequirements,  validatePlayerMeetsRequirements,  validateTaskExistence,} from "../../services/task.service.js";
 
 export const taskRouter = Router();
 
 taskRouter.post(
-    "/tasks/gather",
+    "/tasks/gather", requireAuth,
     withBody(gatherTaskSchema, (body, _req, res) =>
         sendCreatedTask(res, { type: "gather", gatheringGroupId: body.gatheringGroupId }, body.actionIds),
     ),
@@ -31,43 +32,36 @@ taskRouter.post(
 
 const createTask = (userId: string, target: TaskTarget, actionIds: string[]) =>
     db.transaction(async (tx) => {
-        const outcome = await validateTaskExistence(tx, actionIds)
-        if(!outcome.ok) return outcome
-       
-        let taskRequirements: TaskRequirements | null = null
+        await validateTaskExistence(tx, actionIds)
+
+        let taskRequirements: TaskRequirements
 
         if (target.type === "gather") {
             const group = await getGatheringRequirements(tx, target.gatheringGroupId);
-            if(!group) return fail(404, "Could not get gathering requirements");
+            if (!group) throw notFound("gathering_group_not_found");
             taskRequirements = group
         } else {
             const recipe = await getRecipeRequirements(tx, target.recipeId)
-            if (!recipe) return fail(404, "Recipe not found");
+            if (!recipe) throw notFound("recipe_not_found");
             taskRequirements = {...recipe, xpRequirement: 0}
         }
 
-        const requirementsOutcome = await validatePlayerMeetsRequirements(tx, taskRequirements, userId)
-        if(!requirementsOutcome.ok) return requirementsOutcome
+        await validatePlayerMeetsRequirements(tx, taskRequirements, userId)
 
         if (target.type === "craft") {
-            const inputOutcome = await validateInputsAmtMatchRecipeRequirements(tx, target.recipeId, target.inputs)
-            if(!inputOutcome.ok) return inputOutcome
-
-            const requiredResources = inputOutcome.payload.required
-            const rarityByResource = inputOutcome.payload.rarityByResource
+            const { required: requiredResources, rarityByResource } =
+                await validateInputsAmtMatchRecipeRequirements(tx, target.recipeId, target.inputs)
 
             if (requiredResources.length > 0) {
-                const inventoryOutcome = await getInventory(tx, userId)
-                if (!inventoryOutcome.ok) return inventoryOutcome
-
-                const userResources = await getAvailableResources(tx, requiredResources, inventoryOutcome.payload.inventory.id)
-                if(!userResources.ok) return fail(233, "error")
+                const userInventory = await getInventory(tx, userId)
+                const userResources = await getAvailableResources(tx, requiredResources, userInventory.id)
 
                 for (const resource of requiredResources) {
                     const rarityId = rarityByResource.get(resource.resourceId)!;
-                    const have = userResources.payload.find((o) => o.resourceId === resource.resourceId && o.rarityId === rarityId)?.quantity ?? 0;
-                    if (have < resource.amount * target.craftCount) {
-                        return fail(400, `Not enough ${resource.resourceId} for ${target.craftCount} crafts`);
+                    const have = userResources.find((o) => o.resourceId === resource.resourceId && o.rarityId === rarityId)?.quantity ?? 0;
+                    const needed = resource.amount * target.craftCount;
+                    if (have < needed) {
+                        throw badRequest("not_enough_resources", { resourceId: resource.resourceId, rarityId, have, needed });
                     }
                 }
             }
@@ -84,21 +78,18 @@ const createTask = (userId: string, target: TaskTarget, actionIds: string[]) =>
             await tx.insert(taskRecipeInput).values(inputs.map((input) => ({ taskId: created.id, ...input })));
         }
 
-        return { ok: true as const, task: { ...created, actionIds, inputs } };
+        return { ...created, actionIds, inputs };
     });
 
 
 const sendCreatedTask = async (res: Response, target: TaskTarget, actionIds: string[]) => {
     const user = getAuthUser(res);
     try {
-        const result = await createTask(user.id, target, actionIds);
-        if (!result.ok) return res.status(result.status).json({ error: result.message });
-        return res.status(201).json(result.task);
+        const createdTask = await createTask(user.id, target, actionIds);
+        return res.status(201).json(createdTask);
     } catch (err) {
-        const pg = (err as { cause?: { code?: string; constraint?: string } }).cause;
-        if (pg?.code === "23505" && pg.constraint === "task_userId_unique") {
-            return res.status(409).json({ error: "You already have an active task" });
-        }
-        throw err; 
+        // task_userId_unique: the player already has a task (also covers two requests racing)
+        if (isUniqueViolation(err, "task_userId_unique")) throw conflict("task_already_active");
+        throw err; // HttpErrors and real failures both go to errorHandler
     }
 };

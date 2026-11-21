@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { getAuthUser, requireAuth } from "../../middleware/requireAuth.js";
 import { getActiveTask } from "../../services/active-task.service.js";
+import { notFound } from "../../shared/errors.js";
 
 
 export const activeTaskRouter = Router()
@@ -9,7 +10,7 @@ activeTaskRouter.get("/tasks/active-task", requireAuth, async (_req, res) => {
     const user = getAuthUser(res);
     const activeTask = await getActiveTask(user.id);
 
-    if (!activeTask) return res.status(404).json({ error: "You have no active task" });
+    if (!activeTask) throw notFound("no_active_task");
 
     if(activeTask.taskType == "gathering"){
         

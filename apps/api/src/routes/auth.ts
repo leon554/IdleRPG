@@ -9,6 +9,7 @@ import { db } from "../db/index.js";
 import { emailVerification, session, users } from "../db/schema.js";
 import { EMAIL_CODE_EXPIRATION, EmailVerificationPurpose, MAX_EMAIL_CODE_ATTEMPS, RESEND_COOLDOWN_MS, SESSION_EXPIRATION } from "../constants.js";
 import { isUniqueViolation } from "../errorHandler.js";
+import { conflict, notFound, tooManyRequests, unauthorized } from "../shared/errors.js";
 import { and, desc, eq, lte, gt, sql} from "drizzle-orm";
 import { getAuthUser, requireAuth } from "../middleware/requireAuth.js";
 import { emailIpRateLimiter, emailUserRateLimiter, loginRateLimiter, signUpRateLimiter } from "../util/authUtil/routeRateLimits.js";
@@ -45,9 +46,7 @@ authRouter.post("/signup", signUpRateLimiter, withBody(signUpSchema, async (data
             });
         });
     } catch (err) {
-        if (isUniqueViolation(err)) {
-            return res.status(409).json({ error: "email_taken" });
-        }
+        if (isUniqueViolation(err)) throw conflict("email_taken");
         throw err; 
     }
 
@@ -73,13 +72,9 @@ authRouter.post("/verify-email-code", emailIpRateLimiter, requireAuth, emailUser
         .orderBy(desc(emailVerification.createdAt))
         .limit(1);
 
-    if(!latestCode){
-        return res.status(404).json({ error: "code_expired" });
-    }
+    if (!latestCode) throw notFound("code_expired");
 
-    if(latestCode.attempts >= MAX_EMAIL_CODE_ATTEMPS){
-        return res.status(429).json({ error: "too_many_attempts" });
-    }
+    if (latestCode.attempts >= MAX_EMAIL_CODE_ATTEMPS) throw tooManyRequests("too_many_attempts");
     
     if(emailCodesMatch(data.emailCode, latestCode.tokenHash)){
         await db.transaction(async (tx) => {
@@ -101,7 +96,7 @@ authRouter.post("/verify-email-code", emailIpRateLimiter, requireAuth, emailUser
         .set({attempts: sql`${emailVerification.attempts} + 1`})
         .where(and(eq(emailVerification.userId, user.id), eq(emailVerification.id, latestCode.id)))
     
-    return res.status(404).json({ error: "wrong_code" });
+    throw notFound("wrong_code");
     
 }))
 
@@ -114,9 +109,7 @@ authRouter.post("/login", loginRateLimiter, withBody(loginSchema, async (data, r
 
     const passwordOk = await verifyPassword(data.password, user?.passwordHash ?? DUMMY_HASH);
 
-    if (!user || !passwordOk) {
-        return res.status(401).json({ error: "invalid_credentials" });
-    }
+    if (!user || !passwordOk) throw unauthorized("invalid_credentials");
 
     const sessionToken = generateSessionToken();
 
@@ -148,9 +141,7 @@ authRouter.get("/get-user", requireAuth, async (req, res) => {
 authRouter.post("/send-new-email-code", requireAuth, async (req, res) => {
     const user = getAuthUser(res);
 
-    if (user.emailVerifiedAt) {
-        return res.status(409).json({ error: "already_verified" });
-    }
+    if (user.emailVerifiedAt) throw conflict("already_verified");
 
     const now = Date.now();
 
@@ -169,7 +160,7 @@ authRouter.post("/send-new-email-code", requireAuth, async (req, res) => {
         if (waitMs > 0) {
             const retryAfter = Math.ceil(waitMs / 1000);
             res.set("Retry-After", String(retryAfter));
-            return res.status(429).json({ error: "resend_cooldown", retryAfter });
+            throw tooManyRequests("resend_cooldown", { retryAfter });
         }
     }
 

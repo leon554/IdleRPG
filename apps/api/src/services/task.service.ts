@@ -3,9 +3,9 @@ import { actions, categoryLevel, inventory, recipes, requiredResources, resource
 import type { RecipeInput, TaskTarget } from "@idlerpg/shared";
 import type { Tx } from "../types/db.js";
 import type { OwnedResource, RequiredResources, TaskRequirements } from "../types/task.js";
-import { fail, success, type Outcome } from "../util/generalUtil/outcome.js";
+import { badRequest, forbidden, notFound } from "../shared/errors.js";
 
-export async function validateTaskExistence(tx: Tx, actionIds: string[]): Promise<Outcome<null>>{
+export async function validateTaskExistence(tx: Tx, actionIds: string[]): Promise<void>{
     const uniqueActionIds = [...new Set(actionIds)];
 
     const foundActions = await tx
@@ -15,9 +15,8 @@ export async function validateTaskExistence(tx: Tx, actionIds: string[]): Promis
 
 
     if (foundActions.length !== uniqueActionIds.length) {
-        return fail(400, "One or more actions don't exist");
+        throw badRequest("action_not_found");
     }
-    return success(null);
 }
 
 export async function getGatheringRequirements(tx: Tx, gatheringGroupId: string){
@@ -42,19 +41,18 @@ export async function getRecipeRequirements(tx: Tx, recipeId: string){
     return recipe
 }
 
-export async function validatePlayerMeetsRequirements(tx: Tx, requirements: TaskRequirements, userId: string): Promise<Outcome<null>>{
+export async function validatePlayerMeetsRequirements(tx: Tx, requirements: TaskRequirements, userId: string): Promise<void>{
     const [progress] = await tx
         .select({ level: categoryLevel.level, xp: categoryLevel.xp })
         .from(categoryLevel)
         .where(and(eq(categoryLevel.userId, userId), eq(categoryLevel.categoryId, requirements.categoryId)));
 
     if ((progress?.level ?? 0) < requirements.levelRequirement || (progress?.xp ?? 0) < requirements.xpRequirement) {
-        return fail(403, "You don't meet the requirements for this task");
+        throw forbidden("requirements_not_met");
     }
-    return success(null)
 }
 
-export async function validateInputsAmtMatchRecipeRequirements(tx: Tx, recipeId: string, inputs: RecipeInput[]): Promise<Outcome<{required: RequiredResources, rarityByResource: Map<string, string>}>>{
+export async function validateInputsAmtMatchRecipeRequirements(tx: Tx, recipeId: string, inputs: RecipeInput[]): Promise<{required: RequiredResources, rarityByResource: Map<string, string>}>{
     const required = await tx
         .select({ resourceId: requiredResources.resourceId, amount: requiredResources.amount })
         .from(requiredResources)
@@ -69,18 +67,18 @@ export async function validateInputsAmtMatchRecipeRequirements(tx: Tx, recipeId:
 
     
     if (!inputsMatch) {
-        return fail(400, "Inputs must pick exactly one rarity for each required resource");
+        throw badRequest("invalid_recipe_inputs");
     }
-    return success({required, rarityByResource})
+    return {required, rarityByResource}
 }
 
-export async function getInventory(tx: Tx, userId: string): Promise<Outcome<{inventory: {id: string}}>> {
+export async function getInventory(tx: Tx, userId: string): Promise<{id: string}> {
     const [inv] = await tx
         .select({ id: inventory.id })
         .from(inventory)
         .where(eq(inventory.userId, userId));
-    if (!inv) return fail(404, "Inventory not found");
-    return success({inventory: inv})
+    if (!inv) throw notFound("inventory_not_found");
+    return inv
 }
 
 export async function insertTask(tx: Tx, userId: string, target: TaskTarget){
@@ -97,7 +95,7 @@ export async function insertTask(tx: Tx, userId: string, target: TaskTarget){
     return created
 }
 
-export async function getAvailableResources(tx: Tx, requiredResources: RequiredResources, inventoryId: string): Promise<Outcome<OwnedResource[]>>{
+export async function getAvailableResources(tx: Tx, requiredResources: RequiredResources, inventoryId: string): Promise<OwnedResource[]>{
     const owned = await tx
         .select({
             resourceId: resourceCollection.resourceId,
@@ -112,5 +110,5 @@ export async function getAvailableResources(tx: Tx, requiredResources: RequiredR
             ),
         );
     
-    return success(owned)
+    return owned
 }

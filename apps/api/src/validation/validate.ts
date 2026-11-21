@@ -1,4 +1,5 @@
 import type { Request, Response, RequestHandler } from "express";
+import { badRequest } from "../shared/errors.js";
 
 
 
@@ -36,14 +37,11 @@ export function validate<S extends Schema>(schema: S, body: unknown): Infer<S> |
 }
 
 export function withBody<S extends Schema>(schema: S, handler: (body: Infer<S>, req: Request, res: Response) => unknown): RequestHandler {
-    return async (req, res, next) => {
+    // Express 5 forwards thrown/rejected errors to errorHandler, so no try/catch is needed
+    return async (req, res) => {
         const body = validate(schema, req.body);
-        if (!body) return res.status(400).json({ error: "invalid_input" });
-    
-        try {
-            await handler(body, req, res);
-        } catch (err) {
-            next(err);
-        }
+        if (!body) throw badRequest("invalid_input");
+
+        await handler(body, req, res);
     };
 }

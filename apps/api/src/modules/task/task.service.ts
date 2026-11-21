@@ -3,7 +3,9 @@ import { db } from "../../db/index.js";
 import type { Connection } from "../../types/db.js";
 import { isUniqueViolation } from "../../errorHandler.js";
 import { badRequest, conflict, forbidden, notFound } from "../../shared/errors.js";
-import { getStatsPerCategory } from "../../services/stats.service.js";
+import { getStatsPerCategory } from "../stats/stats.service.js";
+import * as inventoryService from "../inventory/inventory.service.js";
+import * as progressService from "../progress/progress.service.js";
 import * as taskRepo from "./task.repository.js";
 import type { CraftTarget, RequiredResource, TaskRequirements } from "./task.types.js";
 
@@ -96,9 +98,7 @@ async function findTaskRequirements(target: TaskTarget, conn: Connection): Promi
 }
 
 async function assertPlayerMeetsRequirements(userId: string, requirements: TaskRequirements, conn: Connection) {
-    const progress = await taskRepo.findPlayerCategoryProgress(userId, requirements.categoryId, conn);
-    const level = progress?.level ?? 0; 
-    const xp = progress?.xp ?? 0;
+    const { level, xp } = await progressService.getCategoryProgress(userId, requirements.categoryId, conn);
 
     if (level < requirements.levelRequirement || xp < requirements.xpRequirement) {
         throw forbidden("requirements_not_met");
@@ -123,10 +123,7 @@ async function assertCanAffordCraft(userId: string, target: CraftTarget, conn: C
     const rarityByResource = assertValidRecipeInputs(required, target);
     if (required.length === 0) return;
 
-    const inventoryId = await taskRepo.findUserInventoryId(userId, conn);
-    if (!inventoryId) throw notFound("inventory_not_found");
-
-    const owned = await taskRepo.findOwnedResources(inventoryId, required.map((r) => r.resourceId), conn);
+    const owned = await inventoryService.getOwnedResources(userId, required.map((r) => r.resourceId), conn);
 
     for (const resource of required) {
         const rarityId = rarityByResource.get(resource.resourceId)!;

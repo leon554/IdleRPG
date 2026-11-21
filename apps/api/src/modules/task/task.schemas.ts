@@ -1,7 +1,6 @@
 import type { Schema } from "../../validation/validate.js";
 import { arrayOf, int, object, optional, str } from "../../validation/typeValidation.js";
-
-export const MAX_TASK_ACTIONS = 20;
+import { MAX_TASK_ACTIONS } from "./task.constants.js";
 
 export const gatherTaskSchema = {
     gatheringGroupId: str(),

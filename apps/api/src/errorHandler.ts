@@ -6,6 +6,10 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   if (res.headersSent) return;
 
   if (err instanceof HttpError) {
+    // Services can't set headers, so a numeric `retryAfter` detail also becomes the Retry-After header
+    const retryAfter = err.details?.retryAfter;
+    if (typeof retryAfter === "number") res.set("Retry-After", String(retryAfter));
+
     return res.status(err.status).json({ ...err.details, error: err.code });
   }
 

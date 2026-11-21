@@ -13,9 +13,3 @@ export type RequiredResource = {
     resourceId: string;
     amount: number;
 };
-
-export type OwnedResource = {
-    resourceId: string;
-    rarityId: string;
-    quantity: number;
-};

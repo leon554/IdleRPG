@@ -1,13 +1,12 @@
 import cors from 'cors';
-import express, { Router } from 'express';
-import { sql } from 'drizzle-orm';
-import type { HealthResponse } from '@idlerpg/shared';
-import { db } from './db/index.js';
+import express from 'express';
 import { env } from './env.js';
-import { healthRouter } from './routes/health.js';
-import { authRouter } from './routes/auth.js';
 import { errorHandler } from './errorHandler.js';
-import { gameDateRouter } from './routes/gameData/index.js';
+import { healthRouter } from './modules/health/health.routes.js';
+import { authRouter } from './modules/auth/auth.routes.js';
+import { catalogRouter } from './modules/catalog/catalog.routes.js';
+import { statsRouter } from './modules/stats/stats.routes.js';
+import { taskRouter } from './modules/task/task.routes.js';
 
 const app = express();
 
@@ -16,7 +15,8 @@ app.use(express.json());
 
 app.use("/api/health", healthRouter)
 app.use("/api/auth", authRouter)
-app.use("/api/gamedata", gameDateRouter)
+// Game data: static catalog plus the player's stats and tasks
+app.use("/api/gamedata", catalogRouter, statsRouter, taskRouter)
 
 app.use(errorHandler)
 

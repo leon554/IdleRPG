@@ -1,6 +1,6 @@
 import { type Connection } from "../../types/db.js";
-import { actions, resources, resourceGatheringGroup, recipes, categoryLevel, requiredResources, inventory, task, resourceCollection, taskAction, taskRecipeInput, gatheringGroupSecondaryResources } from "../../db/schema.js";
-import { inArray, eq, and, asc } from "drizzle-orm";
+import { actions, resources, resourceGatheringGroup, recipes, requiredResources, task, taskAction, taskRecipeInput, gatheringGroupSecondaryResources } from "../../db/schema.js";
+import { inArray, eq, asc } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { firstOrNull } from "../../db/helpers.js";
 import type { RecipeInput, TaskActionEntry, TaskTarget } from "@idlerpg/shared";
@@ -40,47 +40,11 @@ export async function findRecipeRequirements(recipeId: string, conn: Connection 
     return firstOrNull(rows)
 }
 
-export async function findPlayerCategoryProgress(userId: string, categoryId: string, conn: Connection = db) {
-    const rows = await conn
-        .select({ level: categoryLevel.level, xp: categoryLevel.xp })
-        .from(categoryLevel)
-        .where(and(eq(categoryLevel.userId, userId), eq(categoryLevel.categoryId, categoryId)));
-
-    return firstOrNull(rows)
-}
-
 export async function findRequiredResourcesForRecipe(recipeId: string, conn: Connection = db) {
     return conn
         .select({ resourceId: requiredResources.resourceId, amount: requiredResources.amount })
         .from(requiredResources)
         .where(eq(requiredResources.recipeId, recipeId));
-}
-
-export async function findUserInventoryId(userId: string, conn: Connection = db): Promise<string | null> {
-    const rows = await conn
-        .select({ id: inventory.id })
-        .from(inventory)
-        .where(eq(inventory.userId, userId));
-
-    return firstOrNull(rows)?.id ?? null
-}
-
-export async function findOwnedResources(inventoryId: string, resourceIds: string[], conn: Connection = db) {
-    if (resourceIds.length === 0) return []
-
-    return conn
-        .select({
-            resourceId: resourceCollection.resourceId,
-            rarityId: resourceCollection.rarityId,
-            quantity: resourceCollection.quantity,
-        })
-        .from(resourceCollection)
-        .where(
-            and(
-                eq(resourceCollection.inventoryId, inventoryId),
-                inArray(resourceCollection.resourceId, resourceIds),
-            ),
-        );
 }
 
 export async function insertTask(userId: string, target: TaskTarget, conn: Connection = db) {

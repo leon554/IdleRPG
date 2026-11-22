@@ -29,3 +29,8 @@ export const getActiveTask: RequestHandler = async (_req, res) => {
     const task = await taskService.getActiveTask(user.id);
     res.status(200).json(task);
 };
+
+export const claimTask: RequestHandler = async (_req, res) => {
+    const user = getAuthUser(res);
+    res.status(200).json(await taskService.claimTask(user.id));
+};

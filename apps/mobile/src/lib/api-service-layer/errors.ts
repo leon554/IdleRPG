@@ -26,6 +26,8 @@ const MESSAGES = {
     invalid_recipe_inputs: "Pick exactly one rarity for each required resource.",
     inventory_not_found: "Your inventory couldn't be found.",
     not_enough_resources: "You don't have enough resources for that many crafts.",
+    crafting_claim_not_supported: "Claiming crafting tasks isn't available yet.",
+    not_enough_gp_for_rotation: "Rotation cost more gp that you have"
 } as const satisfies Record<ApiErrorCode, string>;
 
 export type ErrorCode = ApiErrorCode | "network_error" | "timeout";

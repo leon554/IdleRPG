@@ -1,0 +1,2 @@
+
+export const DEFAULT_INVENTORY_MAX_SPACE = 100;

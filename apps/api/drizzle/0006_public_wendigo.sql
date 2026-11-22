@@ -1,0 +1,1 @@
+ALTER TABLE "resourceGatheringGroup" ALTER COLUMN "levelRequirement" SET DEFAULT 0;

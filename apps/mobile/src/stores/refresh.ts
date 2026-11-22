@@ -1,10 +1,12 @@
 import { statsStore, loadStats } from "./stats";
+import { taskStore, loadActiveTask } from "./task";
 
 const loaders = {
     stats: loadStats,
+    task: loadActiveTask,
 } as const;
 
-const stores = [statsStore];
+const stores = [statsStore, taskStore];
 
 export type Slice = keyof typeof loaders;
 

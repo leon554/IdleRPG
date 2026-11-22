@@ -1,4 +1,4 @@
-import type { ActiveTask, GatherActiveTask, TaskTarget } from "@idlerpg/shared";
+import type { ActiveTask, CategoryStats, ClaimedItem, ClaimResult, Rarity, Resource, TaskActionEntry, TaskTarget } from "@idlerpg/shared";
 import { db } from "../../db/index.js";
 import type { Connection } from "../../types/db.js";
 import { isUniqueViolation } from "../../errorHandler.js";
@@ -6,7 +6,9 @@ import { badRequest, conflict, forbidden, notFound } from "../../shared/errors.j
 import { getStatsPerCategory } from "../stats/stats.service.js";
 import * as inventoryService from "../inventory/inventory.service.js";
 import * as progressService from "../progress/progress.service.js";
+import { applyRarityMultiplier, getItemRarity } from "../../util/gameUtil/random.js";
 import * as taskRepo from "./task.repository.js";
+import { TASK_DELAY } from "./task.constants.js";
 import type { CraftTarget, RequiredResource, TaskRequirements } from "./task.types.js";
 
 export async function createTask(userId: string, target: TaskTarget, actionIds: string[]) {
@@ -55,27 +57,66 @@ export async function getActiveTask(userId: string): Promise<ActiveTask> {
 }
 
 
-export async function claimResources(userId: string, task: GatherActiveTask) {
-    const [group, secondaryResources] = await Promise.all([
-        taskRepo.findGatheringGroupWithMainResource(task.gatheringGroupId),
-        taskRepo.findGatheringGroupSecondaryResources(task.gatheringGroupId),
-    ]);
+export async function claimTask(userId: string): Promise<ClaimResult> {
+    return db.transaction(async (tx) => {
+        const task = await taskRepo.findTaskByUserForUpdate(userId, tx);
+        if (!task) throw notFound("no_active_task");
+        if (task.gatheringGroupId === null) throw badRequest("crafting_claim_not_supported");
 
-    const statsPerCategory = await getStatsPerCategory(userId)
-    const categoryStats = statsPerCategory[group?.mainResource?.categoryId ?? ""]
+        await inventoryService.getOrCreateInventoryId(userId, tx);
 
-    const stats = {progress: 0, qaulity: 0, yield: 0}
+        const cycleMs = TASK_DELAY * 1000;
+        const cycles = Math.floor((Date.now() - task.lastClaimedAt.getTime()) / cycleMs);
+        const claimedUntil = new Date(task.lastClaimedAt.getTime() + cycles * cycleMs);
+        const nextCycleAt = new Date(claimedUntil.getTime() + cycleMs);
 
-    task.actions.forEach(a => {
-        stats.progress += a.progressMultiplier * categoryStats.progress
-        stats.qaulity += a.qualityMultiplier * categoryStats.quality
-        stats.yield += a.yieldMultiplier * categoryStats.yield
-    })
+        if (cycles === 0) return { cyclesClaimed: 0, successfulCycles: 0, items: [], nextCycleAt };
 
-    //calculate odds then do the claims
+        const [group, secondaryResources, actions, rarities, statsPerCategory] = await Promise.all([
+            taskRepo.findGatheringGroupWithMainResource(task.gatheringGroupId, tx),
+            taskRepo.findGatheringGroupSecondaryResources(task.gatheringGroupId, tx),
+            taskRepo.findTaskActions(task.id, tx),
+            taskRepo.findAllRarities(tx),
+            getStatsPerCategory(userId),
+        ]);
+        if (!group?.mainResource) throw notFound("gathering_group_not_found");
 
-    if (!group) return null;
-    return { ...group, secondaryResources };
+        const mainResource = group.mainResource;
+        const rotation = calculateRotation(actions, statsPerCategory[mainResource.categoryId]);
+        const succeeded = rotation.progress >= mainResource.progressRequirement;
+        const successfulCycles = succeeded ? cycles : 0;
+        
+        const qualityRatio = mainResource.qualityRequirement > 0 ? rotation.quality / mainResource.qualityRequirement : 0;
+        const boostedRarities = Object.values(
+            applyRarityMultiplier(Object.fromEntries(rarities.map((r) => [r.id, r])), qualityRatio),
+        );
+
+        const amountPerCycle = mainAmountPerCycle(rotation.yield, mainResource.yieldRequirement);
+
+        const loot = new LootTally();
+        for (let i = 0; i < successfulCycles; i++) {
+            loot.add(mainResource, getItemRarity(boostedRarities).id, amountPerCycle);
+
+            for (const secondary of secondaryResources) {
+                if (Math.random() < secondary.dropChance) {
+                    loot.add(secondary.resource, getItemRarity(boostedRarities).id, 1);
+                }
+            }
+        }
+
+        await inventoryService.addResources(userId, loot.stacks(), tx);
+        await taskRepo.updateTaskAfterClaim(task.id, claimedUntil, task.completedCount + successfulCycles, tx);
+
+        const rarityById = new Map(rarities.map((r) => [r.id, r]));
+        const items: ClaimedItem[] = loot.entries().map(({ resource, rarityId, amount }) => ({
+            type: "resource",
+            resource,
+            rarity: rarityById.get(rarityId)!,
+            amount,
+        }));
+
+        return { cyclesClaimed: cycles, successfulCycles, items, nextCycleAt };
+    });
 }
 
 
@@ -133,5 +174,51 @@ async function assertCanAffordCraft(userId: string, target: CraftTarget, conn: C
         if (have < needed) {
             throw badRequest("not_enough_resources", { resourceId: resource.resourceId, rarityId, have, needed });
         }
+    }
+}
+
+// ── Claim helpers ─────────────────────────────────────────────────
+
+// Total progress / quality / yield of one rotation: each action's multiplier times the category stat
+function calculateRotation(actions: TaskActionEntry[], stats: CategoryStats | undefined) {
+    const total = { progress: 0, quality: 0, yield: 0 };
+    let totalGpUsed = 0
+
+    if (!stats) return total;
+
+    for (const action of actions) {
+        total.progress += action.progressMultiplier * stats.progress;
+        total.quality += action.qualityMultiplier * stats.quality;
+        total.yield += action.yieldMultiplier * stats.yield;
+        totalGpUsed += action.gatheringPointCost
+    }
+
+    if(totalGpUsed > stats.gatheringPoints) throw badRequest("not_enough_gp_for_rotation")
+    return total;
+}
+
+// Same formula as the "Yield Nx" shown in GatherModal, with a minimum of 1 per successful cycle
+function mainAmountPerCycle(rotationYield: number, yieldRequirement: number) {
+    if (yieldRequirement <= 0) return 1;
+    return Math.max(1, Math.floor(rotationYield / yieldRequirement / 0.25));
+}
+
+// Adds up loot by resource and rarity, so each stack is written once
+class LootTally {
+    private readonly byKey = new Map<string, { resource: Resource; rarityId: string; amount: number }>();
+
+    add(resource: Resource, rarityId: string, amount: number) {
+        const key = `${resource.id}:${rarityId}`;
+        const entry = this.byKey.get(key);
+        if (entry) entry.amount += amount;
+        else this.byKey.set(key, { resource, rarityId, amount });
+    }
+
+    entries() {
+        return [...this.byKey.values()];
+    }
+
+    stacks() {
+        return this.entries().map(({ resource, rarityId, amount }) => ({ resourceId: resource.id, rarityId, amount }));
     }
 }

@@ -97,7 +97,7 @@ export type GatheringGroupDef = {
 
 export const GATHERING_GROUPS = {
   copper_vein: {
-    mainResource: "copper_ore", levelRequirement: 1, xpRequirement: 0,
+    mainResource: "copper_ore", levelRequirement: 0, xpRequirement: 0,
     secondary: { stone: 0.25 },
   },
   iron_vein: {
@@ -105,7 +105,7 @@ export const GATHERING_GROUPS = {
     secondary: { stone: 0.25, copper_ore: 0.05 },
   },
   oak_tree: {
-    mainResource: "oak_log", levelRequirement: 1, xpRequirement: 0,
+    mainResource: "oak_log", levelRequirement: 0, xpRequirement: 0,
     secondary: {},
   },
 } satisfies Record<string, GatheringGroupDef>;

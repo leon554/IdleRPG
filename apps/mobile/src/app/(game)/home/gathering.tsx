@@ -17,7 +17,7 @@ export default function Gathering() {
     const ggPerCategory = useStore(staticDataStore, (s) => s.ggPerCategory)
 
     return (
-        <Screen className="gap-4">
+        <Screen className="gap-3">
             <PageHeader name="Gathering" onPrev={() => router.replace("/(game)/home")}/>
             <FlatList
                 data={Object.entries(ggPerCategory)}

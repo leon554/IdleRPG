@@ -1,0 +1,2 @@
+ALTER TABLE "resourceGatheringGroup" DROP CONSTRAINT "resourceGatheringGroup_levelRequirement_check";--> statement-breakpoint
+ALTER TABLE "resourceGatheringGroup" ADD CONSTRAINT "resourceGatheringGroup_levelRequirement_check" CHECK ("resourceGatheringGroup"."levelRequirement" >= 0);

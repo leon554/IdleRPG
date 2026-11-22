@@ -24,9 +24,6 @@ export const loadStaticData = async () => {
 
     staticDataStore.setState({ status: "loading" });
     try {
-        // Static data loads once per app session, so always skip the native HTTP cache.
-        // RN's fetch turns `cache: "no-store"` into a `_=<timestamp>` query param, which
-        // guarantees a fresh response even if an older one is cached on the device.
         const init: RequestInit = { cache: "no-store" };
         const [gatheringGroups, recipes, actions] = await Promise.all([
             request<GatheringGroup[]>("/gamedata/gathering-groups", init),

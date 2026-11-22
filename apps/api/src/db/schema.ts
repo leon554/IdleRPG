@@ -220,12 +220,12 @@ export const resourceGatheringGroup = pgTable(
   {
     id: text().primaryKey(),
     mainResourceId: text().notNull().references(() => resources.id, { onDelete: "restrict" }),
-    levelRequirement: integer().notNull().default(1),
+    levelRequirement: integer().notNull().default(0),
     xpRequirement: bigint({ mode: "number" }).notNull().default(0),
   },
   (t) => [
     unique("resourceGatheringGroup_mainResourceId_unique").on(t.mainResourceId),
-    check("resourceGatheringGroup_levelRequirement_check", sql`${t.levelRequirement} >= 1`),
+    check("resourceGatheringGroup_levelRequirement_check", sql`${t.levelRequirement} >= 0`),
     check("resourceGatheringGroup_xpRequirement_check", sql`${t.xpRequirement} >= 0`),
   ],
 );

@@ -22,7 +22,7 @@ export default function CategoryScreen() {
     const name = ggs[0]?.category ?? "Unknown category";
 
     return (
-        <Screen className="gap-4">
+        <Screen className="gap-3">
             <PageHeader name={name} onPrev={() => {router.replace("/(game)/home/gathering")}}/>
             <FlatList
                 data={ggs}

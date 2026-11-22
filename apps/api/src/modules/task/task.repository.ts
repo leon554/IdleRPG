@@ -1,5 +1,5 @@
 import { type Connection } from "../../types/db.js";
-import { actions, resources, resourceGatheringGroup, recipes, requiredResources, task, taskAction, taskRecipeInput, gatheringGroupSecondaryResources } from "../../db/schema.js";
+import { actions, rarity, resources, resourceGatheringGroup, recipes, requiredResources, task, taskAction, taskRecipeInput, gatheringGroupSecondaryResources } from "../../db/schema.js";
 import { inArray, eq, asc } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { firstOrNull } from "../../db/helpers.js";
@@ -142,4 +142,20 @@ export async function findGatheringGroupSecondaryResources(gatheringGroupId: str
         .from(gatheringGroupSecondaryResources)
         .innerJoin(resources, eq(resources.id, gatheringGroupSecondaryResources.resourceId))
         .where(eq(gatheringGroupSecondaryResources.gatheringGroupId, gatheringGroupId));
+}
+
+export async function findAllRarities(conn: Connection = db) {
+    return conn.select().from(rarity).orderBy(asc(rarity.tier));
+}
+
+// ── Claiming: locking and updating the task ───────────────────────
+
+// Locks the user's task row until the transaction ends, so two claims at once can't both pay out
+export async function findTaskByUserForUpdate(userId: string, conn: Connection) {
+    const rows = await conn.select().from(task).where(eq(task.userId, userId)).for("update");
+    return firstOrNull(rows)
+}
+
+export async function updateTaskAfterClaim(taskId: string, lastClaimedAt: Date, completedCount: number, conn: Connection = db) {
+    await conn.update(task).set({ lastClaimedAt, completedCount }).where(eq(task.id, taskId));
 }

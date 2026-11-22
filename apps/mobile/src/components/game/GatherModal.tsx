@@ -5,6 +5,8 @@ import { Card } from '../primitives/Card'
 import { useStore } from '@/lib/store'
 import { staticDataStore } from '@/stores/staticData'
 import { statsStore } from '@/stores/stats'
+import { startGatherTask, taskStore } from '@/stores/task'
+import { errorMessage } from '@/lib/api-service-layer/errors'
 import { ProgressBar } from '../primitives/ProgressBar'
 import { Action, GatheringGroup} from '@idlerpg/shared'
 import { RARITIES, CALCULATE_RARITIES_ODDS_SUM } from '@idlerpg/shared/src/gameData'
@@ -22,6 +24,7 @@ interface Props{
 export default function GatherModal({openModal, setOpenModal, categoryId, selectedGatheringGroup}: Props) {
     const actions = useStore(staticDataStore, (s) => s.actions);
     const stats = useStore(statsStore, s => s.stats[categoryId])
+    const starting = useStore(taskStore, (s) => s.starting)
     const [progress, setProgress] = useState({
         progress: 0,
         quality: 0,
@@ -53,6 +56,16 @@ export default function GatherModal({openModal, setOpenModal, categoryId, select
 
     function calculateYieldMultiplie(){
         return `${Math.floor((progress.yield/selectedGatheringGroup.mainResource.yieldRequirement)/0.25)}`
+    }
+
+    async function start(){
+        try {
+            await startGatherTask(selectedGatheringGroup.id, usedActions.map((a) => a.id))
+            toast.success(`Started gathering ${selectedGatheringGroup.mainResource.itemName}`, {duration: 1500})
+            setOpenModal(false)
+        } catch (error) {
+            toast.error(errorMessage(error))
+        }
     }
 
     function useAction(item: Action){
@@ -185,6 +198,9 @@ export default function GatherModal({openModal, setOpenModal, categoryId, select
                     title='Start'
                     size='sm'
                     className='w-[67%]'
+                    loading={starting}
+                    disabled={starting || usedActions.length === 0}
+                    onPress={start}
                 />
             </View>
         </Modal>

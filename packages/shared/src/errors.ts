@@ -23,6 +23,8 @@ export const ERROR_CODES = [
   "invalid_recipe_inputs",
   "inventory_not_found",
   "not_enough_resources",
+  "crafting_claim_not_supported",
+  "not_enough_gp_for_rotation"
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

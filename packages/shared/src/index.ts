@@ -167,3 +167,35 @@ export type CraftActiveTask = ActiveTaskBase & {
 };
 
 export type ActiveTask = GatherActiveTask | CraftActiveTask;
+
+// ── Claiming ──────────────────────────────────────────────────────
+
+export type Resource = {
+    id: string;
+    categoryId: string;
+    itemName: string;
+    progressRequirement: number;
+    qualityRequirement: number;
+    yieldRequirement: number;
+    vendorPrice: number;
+};
+
+export type Rarity = {
+    id: string;
+    name: string;
+    tier: number;
+    color: string;
+    odds: number;
+};
+
+// One stack the claim added to the inventory. Equipment is listed for when crafting claims are added.
+export type ClaimedItem =
+    | { type: "resource"; resource: Resource; rarity: Rarity; amount: number }
+    | { type: "equipment"; equipment: Equipment; rarity: Rarity; amount: number };
+
+export type ClaimResult = {
+    cyclesClaimed: number;     // full cycles since the last claim
+    successfulCycles: number;  // cycles whose rotation met the progress requirement
+    items: ClaimedItem[];
+    nextCycleAt: Date;         // when the next cycle completes (the leftover time is kept)
+};

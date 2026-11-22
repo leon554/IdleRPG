@@ -76,7 +76,7 @@ export type GatheringGroup = {
 export type Equipment = {
     id: string;
     name: string;
-    categoryId: string;
+    categoryId: string | null; // null = universal, fits any category's slots
     typeId: string;
     levelRequirement: number;
     vendorPrice: number;
@@ -199,4 +199,18 @@ export type ClaimResult = {
     successfulCycles: number;  // cycles whose rotation met the progress requirement
     items: ClaimedItem[];
     nextCycleAt: Date;         // when the next cycle completes (the leftover time is kept)
+};
+
+// ── Inventory ─────────────────────────────────────────────────────
+
+export type ResourceStack = { type: "resource"; resource: Resource; rarity: Rarity; quantity: number };
+export type EquipmentStack = { type: "equipment"; equipment: Equipment; rarity: Rarity; quantity: number };
+export type InventoryStack = ResourceStack | EquipmentStack;
+
+export type Inventory = {
+    gold: number;
+    maxSpace: number;
+    usedSpace: number;          // number of stacks (one per item + rarity)
+    resources: ResourceStack[]; // sorted by item name, then rarest first
+    equipment: EquipmentStack[];
 };

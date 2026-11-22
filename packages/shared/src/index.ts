@@ -54,6 +54,7 @@ export type AuthState = "Logged-Out" | "Signed-In-Email-Verified" | "Signed-In-E
 
 export type GatheringGroup = {
     id: string,
+    name: string,
     mainResource: {
         id: string;
         categoryId: string;

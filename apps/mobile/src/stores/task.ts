@@ -50,10 +50,26 @@ export const startCraftTask = (recipeId: string, craftCount: number, actionIds: 
 
 export const claimTask = async (): Promise<ClaimResult> => {
     taskStore.setState({ status: "loading" });
-    const result = await request<ClaimResult>("/gamedata/tasks/claim", { method: "POST" });
-    await refresh("task", "stats");
-    taskStore.setState({ status: "ready" });
-    return result;           
+    try {
+        const result = await request<ClaimResult>("/gamedata/tasks/claim", { method: "POST" });
+        await refresh("task", "stats");
+        return result;
+    } finally {
+        // Also runs when the request fails, so status never gets stuck on "loading"
+        taskStore.setState({ status: "ready" });
+    }
+};
+
+// Returns the final claim, or null when the task couldn't be claimed (crafting tasks)
+export const stopTask = async (): Promise<ClaimResult | null> => {
+    taskStore.setState({ status: "loading" });
+    try {
+        const result = await request<ClaimResult | null>("/gamedata/tasks/stop-task", { method: "POST" });
+        await refresh("task", "stats");
+        return result;
+    } finally {
+        taskStore.setState({ status: "ready" });
+    }
 };
 
 const parseDates = (task: ActiveTask): ActiveTask => ({

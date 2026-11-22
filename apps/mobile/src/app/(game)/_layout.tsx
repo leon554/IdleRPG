@@ -6,15 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@/theme';
 import type { ColorValue } from 'react-native';
 import { router } from 'expo-router';
-import { useStore } from '@/lib/store';
-import { taskStore } from '@/stores/task';
-import { Card } from '@/components/primitives/Card';
-import { useNow } from '@/hooks/useNow';
-import { GameDataUtil } from '@/util/game-data-util';
-import { claimTask } from '@/stores/task';
-import { errorMessage } from '@/lib/api-service-layer/errors';
-import { toast } from '@/components/primitives/Toast';
-import { useEffect } from 'react';
+import { ActiveTaskBanner } from '@/components/game/ActiveTaskBanner';
 
 function iconColor(color: ColorValue | null) {
     return typeof color === 'string' ? color : colors.textMuted;
@@ -25,49 +17,6 @@ const tabIcon =
     ({ color }: { color: ColorValue | null }) =>
         <FontAwesome name={name} color={iconColor(color)} size={22} />;
 
-
-function ActiveTaskBanner() {
-    const activeTask = useStore(taskStore, (s) => s.activeTask);
-    const state = useStore(taskStore, (s) => s.status);
-    const now = useNow()
-
-    useEffect(() => {
-        if (!activeTask) return
-        if(now - activeTask.lastClaimedAt.getTime() > 8000){
-            onClaim()
-        }
-    }, [now])
-
-    if (!activeTask) return null;
-
-    const onClaim = async () => {
-        try {
-            const result = await claimTask();
-            if (result.cyclesClaimed === 0) return toast.info("Nothing to claim yet");
-            toast.success(result.items.map(i => (i.type == "equipment" ? "" : `[${i.resource.itemName}, ${i.rarity.name}, ${i.amount}]`)).join(", "))
-        } catch (error) {
-            toast.error(errorMessage(error));
-        }
-    };
-
-
-
-    return (
-        <View className="px-2 pb-2" style={{ backgroundColor: colors.background }}>
-            <Card>
-                <Text className="text-textPrimary">
-                    {activeTask.gatheringGroupId}
-                </Text>
-                <Text className='text-textMuted'>
-                    {GameDataUtil.formatDuration(now - activeTask.startTime.getTime())}
-                </Text>
-                <Text className='text-textMuted'>
-                    Next Cycle: {state == "loading" ? "loading...": Math.ceil((8000 - (now - activeTask.lastClaimedAt.getTime()))/1000)}
-                </Text>
-            </Card>
-        </View>
-    );
-}
 
 function TabBarWithBanner(props: BottomTabBarProps) {
     return (

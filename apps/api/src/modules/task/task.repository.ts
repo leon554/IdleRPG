@@ -5,16 +5,12 @@ import { db } from "../../db/index.js";
 import { firstOrNull } from "../../db/helpers.js";
 import type { RecipeInput, TaskActionEntry, TaskTarget } from "@idlerpg/shared";
 
-export async function findExistingActionIds(actionIds: string[], conn: Connection = db): Promise<string[]> {
+// The actions with these ids (each once, in no particular order)
+export async function findActionsByIds(actionIds: string[], conn: Connection = db) {
     const uniqueIds = [...new Set(actionIds)]
     if (uniqueIds.length === 0) return []
 
-    const rows = await conn
-        .select({ id: actions.id })
-        .from(actions)
-        .where(inArray(actions.id, uniqueIds))
-
-    return rows.map((a) => a.id)
+    return conn.select().from(actions).where(inArray(actions.id, uniqueIds))
 }
 
 export async function findGatheringGroupRequirements(gatheringGroupId: string, conn: Connection = db) {
@@ -73,8 +69,6 @@ export async function insertTaskRecipeInputs(taskId: string, inputs: RecipeInput
     await conn.insert(taskRecipeInput).values(inputs.map((input) => ({ taskId, ...input })));
 }
 
-// ── Active task ───────────────────────────────────────────────────
-
 export async function findTaskByUser(userId: string, conn: Connection = db) {
     const rows = await conn.select().from(task).where(eq(task.userId, userId));
     return firstOrNull(rows)
@@ -115,8 +109,6 @@ export async function findTaskRecipeInputs(taskId: string, conn: Connection = db
         .where(eq(taskRecipeInput.taskId, taskId));
 }
 
-// ── Claiming ──────────────────────────────────────────────────────
-
 export async function findGatheringGroupWithMainResource(gatheringGroupId: string, conn: Connection = db) {
     const rows = await conn
         .select({
@@ -148,9 +140,6 @@ export async function findAllRarities(conn: Connection = db) {
     return conn.select().from(rarity).orderBy(asc(rarity.tier));
 }
 
-// ── Claiming: locking and updating the task ───────────────────────
-
-// Locks the user's task row until the transaction ends, so two claims at once can't both pay out
 export async function findTaskByUserForUpdate(userId: string, conn: Connection) {
     const rows = await conn.select().from(task).where(eq(task.userId, userId)).for("update");
     return firstOrNull(rows)
@@ -158,4 +147,9 @@ export async function findTaskByUserForUpdate(userId: string, conn: Connection) 
 
 export async function updateTaskAfterClaim(taskId: string, lastClaimedAt: Date, completedCount: number, conn: Connection = db) {
     await conn.update(task).set({ lastClaimedAt, completedCount }).where(eq(task.id, taskId));
+}
+
+export async function deleteTaskByUser(userId: string, conn: Connection = db) {
+    const rows = await conn.delete(task).where(eq(task.userId, userId)).returning({ id: task.id });
+    return firstOrNull(rows)?.id ?? null;
 }

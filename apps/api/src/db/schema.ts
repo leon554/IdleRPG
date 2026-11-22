@@ -219,6 +219,7 @@ export const resourceGatheringGroup = pgTable(
   "resourceGatheringGroup",
   {
     id: text().primaryKey(),
+    name: text().notNull(),
     mainResourceId: text().notNull().references(() => resources.id, { onDelete: "restrict" }),
     levelRequirement: integer().notNull().default(0),
     xpRequirement: bigint({ mode: "number" }).notNull().default(0),

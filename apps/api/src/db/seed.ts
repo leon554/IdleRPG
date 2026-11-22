@@ -51,8 +51,8 @@ async function seed() {
             .onConflictDoUpdate({ target: equipment.id, set: updateAllExcept(equipment, ["id"]) });
           
         await tx.insert(resourceGatheringGroup)
-            .values(Object.entries(GATHERING_GROUPS).map(([id, { mainResource, levelRequirement, xpRequirement }]) => ({
-                id, mainResourceId: mainResource, levelRequirement, xpRequirement,
+            .values(Object.entries(GATHERING_GROUPS).map(([id, { mainResource, levelRequirement, xpRequirement, name }]) => ({
+                id, mainResourceId: mainResource, levelRequirement, xpRequirement, name
             })))
             .onConflictDoUpdate({
                 target: resourceGatheringGroup.id,

@@ -24,7 +24,8 @@ export const ERROR_CODES = [
   "inventory_not_found",
   "not_enough_resources",
   "crafting_claim_not_supported",
-  "not_enough_gp_for_rotation"
+  "not_enough_gp_for_rotation",
+  "not_enough_progress_for_task"
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

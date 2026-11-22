@@ -1,4 +1,4 @@
-import type { ActiveTask, CategoryStats, ClaimedItem, ClaimResult, Rarity, Resource, TaskActionEntry, TaskTarget } from "@idlerpg/shared";
+import type { Action, ActiveTask, CategoryStats, ClaimedItem, ClaimResult, Rarity, Resource, TaskActionEntry, TaskTarget } from "@idlerpg/shared";
 import { db } from "../../db/index.js";
 import type { Connection } from "../../types/db.js";
 import { isUniqueViolation } from "../../errorHandler.js";
@@ -11,15 +11,24 @@ import * as taskRepo from "./task.repository.js";
 import { TASK_DELAY } from "./task.constants.js";
 import type { CraftTarget, RequiredResource, TaskRequirements } from "./task.types.js";
 
+type RotationAction = Pick<Action, "progressMultiplier" | "qualityMultiplier" | "yieldMultiplier" | "gatheringPointCost">;
+
 export async function createTask(userId: string, target: TaskTarget, actionIds: string[]) {
     try {
         return await db.transaction(async (tx) => {
-            await assertActionsExist(actionIds, tx);
+            const current = await taskRepo.findTaskByUserForUpdate(userId, tx);
+            const claim = current?.gatheringGroupId ? await claimLockedTask(userId, current, tx) : null;
+
+            const rotation = await loadRotation(actionIds, tx);
 
             const requirements = await findTaskRequirements(target, tx);
             await assertPlayerMeetsRequirements(userId, requirements, tx);
 
+            if (target.type === "gather") await assertRotationIsValid(userId, target.gatheringGroupId, rotation, tx);
+
             if (target.type === "craft") await assertCanAffordCraft(userId, target, tx);
+
+            if (current) await taskRepo.deleteTaskByUser(userId, tx);
 
             const created = await taskRepo.insertTask(userId, target, tx);
             await taskRepo.insertTaskActions(created.id, actionIds, tx);
@@ -27,7 +36,7 @@ export async function createTask(userId: string, target: TaskTarget, actionIds: 
             const inputs = target.type === "craft" ? target.inputs : [];
             await taskRepo.insertTaskRecipeInputs(created.id, inputs, tx);
 
-            return { ...created, actionIds, inputs };
+            return { ...created, actionIds, inputs, claim };
         });
     } catch (err) {
         if (isUniqueViolation(err, "task_userId_unique")) throw conflict("task_already_active");
@@ -61,69 +70,98 @@ export async function claimTask(userId: string): Promise<ClaimResult> {
     return db.transaction(async (tx) => {
         const task = await taskRepo.findTaskByUserForUpdate(userId, tx);
         if (!task) throw notFound("no_active_task");
-        if (task.gatheringGroupId === null) throw badRequest("crafting_claim_not_supported");
-
-        await inventoryService.getOrCreateInventoryId(userId, tx);
-
-        const cycleMs = TASK_DELAY * 1000;
-        const cycles = Math.floor((Date.now() - task.lastClaimedAt.getTime()) / cycleMs);
-        const claimedUntil = new Date(task.lastClaimedAt.getTime() + cycles * cycleMs);
-        const nextCycleAt = new Date(claimedUntil.getTime() + cycleMs);
-
-        if (cycles === 0) return { cyclesClaimed: 0, successfulCycles: 0, items: [], nextCycleAt };
-
-        const [group, secondaryResources, actions, rarities, statsPerCategory] = await Promise.all([
-            taskRepo.findGatheringGroupWithMainResource(task.gatheringGroupId, tx),
-            taskRepo.findGatheringGroupSecondaryResources(task.gatheringGroupId, tx),
-            taskRepo.findTaskActions(task.id, tx),
-            taskRepo.findAllRarities(tx),
-            getStatsPerCategory(userId),
-        ]);
-        if (!group?.mainResource) throw notFound("gathering_group_not_found");
-
-        const mainResource = group.mainResource;
-        const rotation = calculateRotation(actions, statsPerCategory[mainResource.categoryId]);
-        const succeeded = rotation.progress >= mainResource.progressRequirement;
-        const successfulCycles = succeeded ? cycles : 0;
-        
-        const qualityRatio = mainResource.qualityRequirement > 0 ? rotation.quality / mainResource.qualityRequirement : 0;
-        const boostedRarities = Object.values(
-            applyRarityMultiplier(Object.fromEntries(rarities.map((r) => [r.id, r])), qualityRatio),
-        );
-
-        const amountPerCycle = mainAmountPerCycle(rotation.yield, mainResource.yieldRequirement);
-
-        const loot = new LootTally();
-        for (let i = 0; i < successfulCycles; i++) {
-            loot.add(mainResource, getItemRarity(boostedRarities).id, amountPerCycle);
-
-            for (const secondary of secondaryResources) {
-                if (Math.random() < secondary.dropChance) {
-                    loot.add(secondary.resource, getItemRarity(boostedRarities).id, 1);
-                }
-            }
-        }
-
-        await inventoryService.addResources(userId, loot.stacks(), tx);
-        await taskRepo.updateTaskAfterClaim(task.id, claimedUntil, task.completedCount + successfulCycles, tx);
-
-        const rarityById = new Map(rarities.map((r) => [r.id, r]));
-        const items: ClaimedItem[] = loot.entries().map(({ resource, rarityId, amount }) => ({
-            type: "resource",
-            resource,
-            rarity: rarityById.get(rarityId)!,
-            amount,
-        }));
-
-        return { cyclesClaimed: cycles, successfulCycles, items, nextCycleAt };
+        return claimLockedTask(userId, task, tx);
     });
 }
 
+type LockedTask = NonNullable<Awaited<ReturnType<typeof taskRepo.findTaskByUserForUpdate>>>;
+async function claimLockedTask(userId: string, task: LockedTask, tx: Connection): Promise<ClaimResult> {
+    if (task.gatheringGroupId === null) throw badRequest("crafting_claim_not_supported");
+
+    await inventoryService.getOrCreateInventoryId(userId, tx);
+
+    const cycleMs = TASK_DELAY * 1000;
+    const cycles = Math.floor((Date.now() - task.lastClaimedAt.getTime()) / cycleMs);
+    const claimedUntil = new Date(task.lastClaimedAt.getTime() + cycles * cycleMs);
+    const nextCycleAt = new Date(claimedUntil.getTime() + cycleMs);
+
+    if (cycles === 0) return { cyclesClaimed: 0, successfulCycles: 0, items: [], nextCycleAt };
+
+    const group = await taskRepo.findGatheringGroupWithMainResource(task.gatheringGroupId, tx);
+    const secondaryResources = await taskRepo.findGatheringGroupSecondaryResources(task.gatheringGroupId, tx);
+    const actions = await taskRepo.findTaskActions(task.id, tx);
+    const rarities = await taskRepo.findAllRarities(tx);
+    const statsPerCategory = await getStatsPerCategory(userId);
+
+    if (!group?.mainResource) throw notFound("gathering_group_not_found");
+
+    const mainResource = group.mainResource;
+    const rotation = calculateRotation(actions, statsPerCategory[mainResource.categoryId]);
+    const succeeded = rotation.progress >= mainResource.progressRequirement;
+    const successfulCycles = succeeded ? cycles : 0;
+
+    
+    const qualityRatio = mainResource.qualityRequirement > 0 ? rotation.quality / mainResource.qualityRequirement : 0;
+    const boostedRarities = Object.values(
+        applyRarityMultiplier(Object.fromEntries(rarities.map((r) => [r.id, r])), qualityRatio),
+    );
+
+    const amountPerCycle = mainAmountPerCycle(rotation.yield, mainResource.yieldRequirement);
+
+    const loot = new LootTally();
+    for (let i = 0; i < successfulCycles; i++) {
+        loot.add(mainResource, getItemRarity(boostedRarities).id, amountPerCycle);
+
+        for (const secondary of secondaryResources) {
+            if (Math.random() < secondary.dropChance) {
+                loot.add(secondary.resource, getItemRarity(boostedRarities).id, 1);
+            }
+        }
+    }
+
+    await inventoryService.addResources(userId, loot.stacks(), tx);
+    await taskRepo.updateTaskAfterClaim(task.id, claimedUntil, task.completedCount + successfulCycles, tx);
+
+    const rarityById = new Map(rarities.map((r) => [r.id, r]));
+    const items: ClaimedItem[] = loot.entries().map(({ resource, rarityId, amount }) => ({
+        type: "resource",
+        resource,
+        rarity: rarityById.get(rarityId)!,
+        amount,
+    }));
+
+    return { cyclesClaimed: cycles, successfulCycles, items, nextCycleAt };
+}
+
+export async function stopTask(userId: string): Promise<ClaimResult | null> {
+    return db.transaction(async (tx) => {
+        const task = await taskRepo.findTaskByUserForUpdate(userId, tx);
+        if (!task) throw notFound("no_active_task");
+
+        const claim = task.gatheringGroupId ? await claimLockedTask(userId, task, tx) : null;
+
+        await taskRepo.deleteTaskByUser(userId, tx);
+        return claim;
+    });
+}
+
+async function loadRotation(actionIds: string[], conn: Connection): Promise<Action[]> {
+    const found = await taskRepo.findActionsByIds(actionIds, conn);
+    const byId = new Map(found.map((a) => [a.id, a]));
+    if (byId.size !== new Set(actionIds).size) throw badRequest("action_not_found");
+    return actionIds.map((id) => byId.get(id)!);
+}
 
 
-async function assertActionsExist(actionIds: string[], conn: Connection) {
-    const found = await taskRepo.findExistingActionIds(actionIds, conn);
-    if (found.length !== new Set(actionIds).size) throw badRequest("action_not_found");
+async function assertRotationIsValid(userId: string, gatheringGroupId: string, rotation: Action[], conn: Connection) {
+    const group = await taskRepo.findGatheringGroupWithMainResource(gatheringGroupId, conn);
+    if (!group?.mainResource) throw notFound("gathering_group_not_found");
+
+    const stats = (await getStatsPerCategory(userId))[group.mainResource.categoryId];
+    const totals = calculateRotation(rotation, stats);
+
+    if (totals.gpUsed > (stats?.gatheringPoints ?? 0)) throw badRequest("not_enough_gp_for_rotation");
+    if (totals.progress < group.mainResource.progressRequirement) throw badRequest("not_enough_progress_for_task");
 }
 
 async function findTaskRequirements(target: TaskTarget, conn: Connection): Promise<TaskRequirements> {
@@ -145,7 +183,6 @@ async function assertPlayerMeetsRequirements(userId: string, requirements: TaskR
         throw forbidden("requirements_not_met");
     }
 }
-
 
 function assertValidRecipeInputs(required: RequiredResource[], target: CraftTarget): Map<string, string> {
     const rarityByResource = new Map(target.inputs.map((i) => [i.resourceId, i.rarityId]));
@@ -177,33 +214,26 @@ async function assertCanAffordCraft(userId: string, target: CraftTarget, conn: C
     }
 }
 
-// ── Claim helpers ─────────────────────────────────────────────────
-
-// Total progress / quality / yield of one rotation: each action's multiplier times the category stat
-function calculateRotation(actions: TaskActionEntry[], stats: CategoryStats | undefined) {
-    const total = { progress: 0, quality: 0, yield: 0 };
-    let totalGpUsed = 0
-
+function calculateRotation(actions: RotationAction[], stats: CategoryStats | undefined) {
+    const total = { progress: 0, quality: 0, yield: 0, gpUsed: 0 };
     if (!stats) return total;
 
     for (const action of actions) {
         total.progress += action.progressMultiplier * stats.progress;
         total.quality += action.qualityMultiplier * stats.quality;
         total.yield += action.yieldMultiplier * stats.yield;
-        totalGpUsed += action.gatheringPointCost
+        total.gpUsed += action.gatheringPointCost;
     }
-
-    if(totalGpUsed > stats.gatheringPoints) throw badRequest("not_enough_gp_for_rotation")
     return total;
 }
 
-// Same formula as the "Yield Nx" shown in GatherModal, with a minimum of 1 per successful cycle
+
 function mainAmountPerCycle(rotationYield: number, yieldRequirement: number) {
     if (yieldRequirement <= 0) return 1;
     return Math.max(1, Math.floor(rotationYield / yieldRequirement / 0.25));
 }
 
-// Adds up loot by resource and rarity, so each stack is written once
+
 class LootTally {
     private readonly byKey = new Map<string, { resource: Resource; rarityId: string; amount: number }>();
 

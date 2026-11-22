@@ -42,6 +42,7 @@ export async function findGatheringGroups(conn: Connection = db) {
     return conn
         .select({
             id: resourceGatheringGroup.id,
+            name: resourceGatheringGroup.name,
             mainResource: resources,
             levelRequirement: resourceGatheringGroup.levelRequirement,
             category: categories.name,

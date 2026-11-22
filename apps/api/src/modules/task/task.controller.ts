@@ -34,3 +34,8 @@ export const claimTask: RequestHandler = async (_req, res) => {
     const user = getAuthUser(res);
     res.status(200).json(await taskService.claimTask(user.id));
 };
+
+export const stopTask: RequestHandler = async (_req, res) => {
+    const user = getAuthUser(res);
+    res.status(200).json(await taskService.stopTask(user.id));
+};

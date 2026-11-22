@@ -23,7 +23,7 @@ export function Card({
     children,
     ...rest
 }: CardProps) {
-    const base = `rounded-md p-4 ${variantStyles[variant]} ${className}`;
+    const base = ` ${className} rounded-md p-4 ${variantStyles[variant]}`;
 
     const content = (
         <>

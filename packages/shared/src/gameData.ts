@@ -89,7 +89,8 @@ export type ResourceId = keyof typeof RESOURCES;
 
 
 export type GatheringGroupDef = {
-  mainResource: ResourceId;          
+  mainResource: ResourceId;  
+  name: string;        
   levelRequirement: number;       
   xpRequirement: number;
   secondary: Partial<Record<ResourceId, number>>; 
@@ -98,15 +99,15 @@ export type GatheringGroupDef = {
 export const GATHERING_GROUPS = {
   copper_vein: {
     mainResource: "copper_ore", levelRequirement: 0, xpRequirement: 0,
-    secondary: { stone: 0.25 },
+    secondary: { stone: 0.25 }, name: "Copper Vein"
   },
   iron_vein: {
     mainResource: "iron_ore", levelRequirement: 10, xpRequirement: 5_000,
-    secondary: { stone: 0.25, copper_ore: 0.05 },
+    secondary: { stone: 0.25, copper_ore: 0.05 }, name: "Iron Vein"
   },
   oak_tree: {
     mainResource: "oak_log", levelRequirement: 0, xpRequirement: 0,
-    secondary: {},
+    secondary: {}, name: "Oak Tree"
   },
 } satisfies Record<string, GatheringGroupDef>;
 

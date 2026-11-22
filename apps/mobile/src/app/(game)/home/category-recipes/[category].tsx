@@ -1,6 +1,6 @@
 import { FlatList, Text } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import type { GatheringGroup } from '@idlerpg/shared';
+import type { GatheringGroup, Recipe } from '@idlerpg/shared';
 import { Screen } from '@/components/primitives/Screen';
 import PageHeader from '@/components/primitives/PageHeader';
 import { Card } from '@/components/primitives/Card';
@@ -9,10 +9,15 @@ import { staticDataStore } from '@/stores/staticData';
 import { View } from 'react-native';
 import { capitliseFirst } from '@/auth/util';
 import { rarityColors } from '@/theme';
+import { Button } from '@/components/primitives/Button';
+import { useState } from 'react';
+import CraftModal from '@/components/game/CraftModal';
 
 export default function ReipeScreen() {
-   const { category } = useLocalSearchParams<{ category: string }>();
+    const { category } = useLocalSearchParams<{ category: string }>();
     const recipes = useStore(staticDataStore, (s) => s.recipes[category]) ?? [];
+
+    const [selectedRecipe, setSelectedRecipe] = useState<null | Recipe>(null)
 
 
     return (
@@ -61,9 +66,21 @@ export default function ReipeScreen() {
                                 )}
                             />
                         </View>
+                        <Button
+                            title='Craft'
+                            size='sm'
+                            onPress={() => setSelectedRecipe(item)}
+                        />
                     </Card>
                 )}
             />
+            {selectedRecipe != null && 
+                <CraftModal 
+                    openModal={true}
+                    setOpenModal={() => setSelectedRecipe(null)}
+                    categoryId={selectedRecipe.categoryId}
+                    selectedRecipe={selectedRecipe}
+                />}
         </Screen>
     );
 }

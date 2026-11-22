@@ -1,6 +1,7 @@
 import { Pressable, PressableProps, Text, View, ViewProps } from "react-native";
 
-type Variant = "default" | "raised" | "outline";
+// "none": no background, border, rounding, padding or pressed highlight; only your className applies
+type Variant = "default" | "raised" | "outline" | "none";
 
 type CardProps = ViewProps & {
     variant?: Variant;
@@ -13,6 +14,7 @@ const variantStyles: Record<Variant, string> = {
     default: "bg-surface border border-border",
     raised: "bg-surfaceRaised border border-border",
     outline: "bg-transparent border border-borderStrong",
+    none: "",
 };
 
 export function Card({
@@ -23,7 +25,8 @@ export function Card({
     children,
     ...rest
 }: CardProps) {
-    const base = ` ${className} rounded-md p-4 ${variantStyles[variant]}`;
+    const unstyled = variant === "none";
+    const base = unstyled ? className : ` ${className} rounded-md p-4 ${variantStyles[variant]}`;
 
     const content = (
         <>
@@ -41,7 +44,7 @@ export function Card({
             <Pressable
                 accessibilityRole="button"
                 onPress={onPress}
-                className={`${base} active:bg-surfaceRaised`}
+                className={unstyled ? base : `${base} active:bg-surfaceRaised`}
                 {...(rest as PressableProps)}
             >
                 {content}

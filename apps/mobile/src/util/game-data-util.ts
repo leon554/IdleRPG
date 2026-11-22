@@ -1,4 +1,7 @@
-import { GatheringGroup } from "@idlerpg/shared"
+import type { GatheringGroup, InventoryStack } from "@idlerpg/shared"
+// Runtime values come from the file directly (like GatherModal's RARITIES): Metro can't resolve
+// the "./gameData.js" re-exports in the shared index, so only types are imported from "@idlerpg/shared"
+import { unitSellPrice } from "@idlerpg/shared/src/gameData"
 
 export namespace GameDataUtil{
     export function getGGPerCategoryMap(gatheringGroups: GatheringGroup[]){
@@ -43,4 +46,34 @@ export namespace GameDataUtil{
 
         return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
     };
+
+    // Gold for one item of this stack: vendorPrice ^ rarity tier (the same formula the API pays out with)
+    export function getVendorSellPrice(stack: InventoryStack){
+        const vendorPrice = stack.type == "equipment" ? stack.equipment.vendorPrice : stack.resource.vendorPrice
+        return unitSellPrice(vendorPrice, stack.rarity.tier)
+    }
+
+    const COMPACT_UNITS = [
+        { value: 1_000_000_000, suffix: "b" },
+        { value: 1_000_000, suffix: "m" },
+        { value: 1_000, suffix: "k" },
+    ] as const;
+
+    // 1230 -> "1.23k", 1293000 -> "1.29m", 4500000000 -> "4.5b", 999 -> "999".
+    // Rounds down (999999 -> "999.99k", never "1000k"), so it never shows more than the real amount,
+    // and drops trailing zeros (1000 -> "1k", 1500 -> "1.5k").
+    export function formatCompactNumber(value: number, decimals = 2): string {
+        if (!Number.isFinite(value)) return String(value);
+
+        const sign = value < 0 ? "-" : "";
+        const abs = Math.abs(value);
+        const unit = COMPACT_UNITS.find((u) => abs >= u.value);
+
+        const scaled = unit ? abs / unit.value : abs;
+        const factor = 10 ** decimals;
+        // The small epsilon stops float error turning e.g. 1.29 into 1.2899999 before rounding down
+        const truncated = Math.floor(scaled * factor + 1e-9) / factor;
+
+        return `${sign}${Number(truncated.toFixed(decimals))}${unit?.suffix ?? ""}`;
+    }
 }

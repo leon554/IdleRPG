@@ -10,31 +10,11 @@ import { useStore } from '@/lib/store'
 import { errorMessage } from '@/lib/api-service-layer/errors'
 import { inventoryStore, loadInventory } from '@/stores/inventory'
 import { colors } from '@/theme'
+import { InventoryRow } from '@/components/game/inventory/InvetoryRow'
+import { GameDataUtil } from '@/util/game-data-util'
 
 const stackKey = (s: InventoryStack) =>
     `${s.type}:${s.type === 'resource' ? s.resource.id : s.equipment.id}:${s.rarity.id}`
-
-const stackName = (s: InventoryStack) => (s.type === 'resource' ? s.resource.itemName : s.equipment.name)
-
-function StackRow({ stack, isLast }: { stack: InventoryStack; isLast: boolean }) {
-    return (
-        <View className={`flex-row items-center gap-3 px-4 py-3 ${isLast ? '' : 'border-b border-border'}`}>
-            <View className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: stack.rarity.color }} />
-            <View className="flex-1">
-                <Text className="text-textPrimary" numberOfLines={1}>
-                    {stackName(stack)}
-                </Text>
-                {stack.type === 'equipment' && <Text className="text-textMuted text-xs">Equipment</Text>}
-            </View>
-            <Text className="w-24 text-sm" style={{ color: stack.rarity.color }} numberOfLines={1}>
-                {stack.rarity.name}
-            </Text>
-            <Text className="text-textPrimary font-semibold text-right min-w-10">
-                {stack.quantity.toLocaleString()}
-            </Text>
-        </View>
-    )
-}
 
 export default function InventoryScreen() {
     const inventory = useStore(inventoryStore, (s) => s.inventory)
@@ -77,7 +57,7 @@ export default function InventoryScreen() {
             <Card className="flex-row justify-between items-center">
                 <View>
                     <Text className="text-textMuted text-xs">Gold</Text>
-                    <Text className="text-textPrimary text-lg font-semibold">{inventory.gold.toLocaleString()}</Text>
+                    <Text className="text-textPrimary text-lg font-semibold">{GameDataUtil.formatCompactNumber(inventory.gold)}</Text>
                 </View>
                 <View className="items-end">
                     <Text className="text-textMuted text-xs">Space</Text>
@@ -89,8 +69,9 @@ export default function InventoryScreen() {
 
             <FlatList
                 data={stacks}
+                showsVerticalScrollIndicator={false}
                 keyExtractor={stackKey}
-                renderItem={({ item, index }) => <StackRow stack={item} isLast={index === stacks.length - 1} />}
+                renderItem={({ item, index }) => <InventoryRow stack={item} isLast={index === stacks.length - 1} />}
                 className="grow-0 rounded-md border border-border bg-surface"
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
                 ListEmptyComponent={

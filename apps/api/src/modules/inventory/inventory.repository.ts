@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, sql } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { firstOrNull } from "../../db/helpers.js";
 import { equipment, equipmentCollection, inventory, rarity, resourceCollection, resources } from "../../db/schema.js";
@@ -76,4 +76,69 @@ export async function findEquipmentStacks(inventoryId: string, conn: Connection 
         .innerJoin(rarity, eq(rarity.id, equipmentCollection.rarityId))
         .where(and(eq(equipmentCollection.inventoryId, inventoryId), gt(equipmentCollection.quantity, 0)))
         .orderBy(asc(equipment.name), desc(rarity.tier));
+}
+
+
+export async function findSellPriceInfo(itemType: "resource" | "equipment", itemId: string, rarityId: string, conn: Connection = db) {
+    const item = itemType === "resource"
+        ? firstOrNull(await conn.select({ vendorPrice: resources.vendorPrice }).from(resources).where(eq(resources.id, itemId)))
+        : firstOrNull(await conn.select({ vendorPrice: equipment.vendorPrice }).from(equipment).where(eq(equipment.id, itemId)));
+    const tier = firstOrNull(await conn.select({ tier: rarity.tier }).from(rarity).where(eq(rarity.id, rarityId)));
+
+    return item && tier ? { vendorPrice: item.vendorPrice, tier: tier.tier } : null;
+}
+
+
+export async function takeFromStack(
+    inventoryId: string, itemType: "resource" | "equipment", itemId: string, rarityId: string, quantity: number,
+    conn: Connection = db,
+) {
+    const rows = itemType === "resource"
+        ? await conn.update(resourceCollection)
+            .set({ quantity: sql`${resourceCollection.quantity} - ${quantity}` })
+            .where(and(
+                eq(resourceCollection.inventoryId, inventoryId),
+                eq(resourceCollection.resourceId, itemId),
+                eq(resourceCollection.rarityId, rarityId),
+                gte(resourceCollection.quantity, quantity),
+            ))
+            .returning({ remaining: resourceCollection.quantity })
+        : await conn.update(equipmentCollection)
+            .set({ quantity: sql`${equipmentCollection.quantity} - ${quantity}` })
+            .where(and(
+                eq(equipmentCollection.inventoryId, inventoryId),
+                eq(equipmentCollection.equipmentId, itemId),
+                eq(equipmentCollection.rarityId, rarityId),
+                gte(equipmentCollection.quantity, quantity),
+            ))
+            .returning({ remaining: equipmentCollection.quantity });
+
+    return firstOrNull(rows)?.remaining ?? null;
+}
+
+export async function deleteEmptyStack(inventoryId: string, itemType: "resource" | "equipment", itemId: string, rarityId: string, conn: Connection = db) {
+    if (itemType === "resource") {
+        await conn.delete(resourceCollection).where(and(
+            eq(resourceCollection.inventoryId, inventoryId),
+            eq(resourceCollection.resourceId, itemId),
+            eq(resourceCollection.rarityId, rarityId),
+            eq(resourceCollection.quantity, 0),
+        ));
+    } else {
+        await conn.delete(equipmentCollection).where(and(
+            eq(equipmentCollection.inventoryId, inventoryId),
+            eq(equipmentCollection.equipmentId, itemId),
+            eq(equipmentCollection.rarityId, rarityId),
+            eq(equipmentCollection.quantity, 0),
+        ));
+    }
+}
+
+export async function addGold(inventoryId: string, amount: number, conn: Connection = db): Promise<number> {
+    const [row] = await conn
+        .update(inventory)
+        .set({ gold: sql`${inventory.gold} + ${amount}` })
+        .where(eq(inventory.id, inventoryId))
+        .returning({ gold: inventory.gold });
+    return row.gold;
 }

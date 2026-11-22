@@ -36,15 +36,20 @@ const VARIANTS: Record<ToastType, { icon: string; badge: string }> = {
     info: { icon: "i", badge: "bg-info" },
 };
 
-export function ToastHost() {
+// `active` = false takes this host off the stack straight away (e.g. a Modal that's closing),
+// handing any toast it's showing to the host underneath, so the toast isn't stuck in a fading modal.
+export function ToastHost({ active = true }: { active?: boolean } = {}) {
     const insets = useSafeAreaInsets();
     const [item, setItem] = useState<ToastItem | null>(null);
     const y = useRef(new Animated.Value(HIDDEN_Y)).current;
     const opacity = useRef(new Animated.Value(0)).current;
     const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+    // The toast currently on screen (null once it starts hiding), so it can be handed on when this host goes inactive
+    const showing = useRef<ToastItem | null>(null);
 
     const hide = useCallback(() => {
         clearTimeout(timer.current);
+        showing.current = null;
         Animated.parallel([
             Animated.timing(y, { toValue: HIDDEN_Y, duration: 200, useNativeDriver: true }),
             Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
@@ -54,8 +59,10 @@ export function ToastHost() {
     }, [y, opacity]);
 
     useEffect(() => {
+        if (!active) return;
         const listener: Listener = (t) => {
             clearTimeout(timer.current);
+            showing.current = t;
             setItem(t); 
             Animated.parallel([
                 Animated.spring(y, { toValue: 0, useNativeDriver: true, bounciness: 6 }),
@@ -68,8 +75,13 @@ export function ToastHost() {
             const index = listeners.lastIndexOf(listener);
             if (index !== -1) listeners.splice(index, 1);
             clearTimeout(timer.current);
+            // e.g. a Modal closing right after showing a toast: pass it to the host underneath so it isn't lost
+            const pending = showing.current;
+            showing.current = null;
+            setItem(null);
+            if (pending) listeners[listeners.length - 1]?.(pending);
         };
-    }, [hide, y, opacity]);
+    }, [active, hide, y, opacity]);
 
     if (!item) return null;
     const v = VARIANTS[item.type];

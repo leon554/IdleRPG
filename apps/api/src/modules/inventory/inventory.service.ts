@@ -1,8 +1,8 @@
 import { db } from "../../db/index.js";
-import { notFound } from "../../shared/errors.js";
+import { badRequest, notFound } from "../../shared/errors.js";
 import type { Connection } from "../../types/db.js";
 import * as inventoryRepo from "./inventory.repository.js";
-import type { Inventory } from "@idlerpg/shared";
+import { unitSellPrice, type Inventory, type SellRequest, type SellResult } from "@idlerpg/shared";
 import type { OwnedResource } from "./inventory.types.js";
 import { DEFAULT_INVENTORY_MAX_SPACE } from "./inventory.constants.js";
 
@@ -51,4 +51,24 @@ export async function getInventory(userId: string): Promise<Inventory> {
         resources: resourceRows.map((r) => ({ type: "resource", ...r })),
         equipment: equipmentRows.map((e) => ({ type: "equipment", ...e })),
     };
+}
+
+
+export async function sellStack(userId: string, { itemType, itemId, rarityId, quantity }: SellRequest): Promise<SellResult> {
+    return db.transaction(async (tx) => {
+        const inventoryId = await inventoryRepo.findUserInventoryId(userId, tx);
+        if (!inventoryId) throw badRequest("not_enough_items"); 
+
+        const priceInfo = await inventoryRepo.findSellPriceInfo(itemType, itemId, rarityId, tx);
+        if (!priceInfo) throw badRequest("not_enough_items"); 
+
+        const remainingQuantity = await inventoryRepo.takeFromStack(inventoryId, itemType, itemId, rarityId, quantity, tx);
+        if (remainingQuantity === null) throw badRequest("not_enough_items");
+        if (remainingQuantity === 0) await inventoryRepo.deleteEmptyStack(inventoryId, itemType, itemId, rarityId, tx);
+
+        const goldEarned = unitSellPrice(priceInfo.vendorPrice, priceInfo.tier) * quantity;
+        const gold = await inventoryRepo.addGold(inventoryId, goldEarned, tx);
+
+        return { goldEarned, gold, remainingQuantity };
+    });
 }

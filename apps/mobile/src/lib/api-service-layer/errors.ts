@@ -28,7 +28,8 @@ const MESSAGES = {
     not_enough_resources: "You don't have enough resources for that many crafts.",
     crafting_claim_not_supported: "Claiming crafting tasks isn't available yet.",
     not_enough_gp_for_rotation: "This rotation costs more gathering points than you have.",
-    not_enough_progress_for_task: "This rotation doesn't reach the progress requirement."
+    not_enough_progress_for_task: "This rotation doesn't reach the progress requirement.",
+    not_enough_items: "You don't have that many to sell."
 } as const satisfies Record<ApiErrorCode, string>;
 
 export type ErrorCode = ApiErrorCode | "network_error" | "timeout";

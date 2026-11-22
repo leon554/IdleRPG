@@ -58,7 +58,7 @@ export function Modal({
                 </View>
             </View>
             {/* The native modal window covers the root ToastHost, so toasts render here while it's open. */}
-            <ToastHost />
+            <ToastHost active={visible} />
         </RNModal>
     );
 }

@@ -214,3 +214,19 @@ export type Inventory = {
     resources: ResourceStack[]; // sorted by item name, then rarest first
     equipment: EquipmentStack[];
 };
+
+// ── Selling ───────────────────────────────────────────────────────
+
+
+export type SellRequest = {
+    itemType: "resource" | "equipment";
+    itemId: string;
+    rarityId: string;
+    quantity: number;
+};
+
+export type SellResult = {
+    goldEarned: number;
+    gold: number;              // the player's gold after the sale
+    remainingQuantity: number; // left in the stack (0 = the stack is gone)
+};

@@ -1,5 +1,5 @@
 import { type Connection } from "../../types/db.js";
-import { actions, rarity, resources, resourceGatheringGroup, recipes, requiredResources, task, taskAction, taskRecipeInput, gatheringGroupSecondaryResources } from "../../db/schema.js";
+import { actions, equipment, equipmentStats, rarity, resources, resourceGatheringGroup, recipes, requiredResources, task, taskAction, taskRecipeInput, gatheringGroupSecondaryResources } from "../../db/schema.js";
 import { inArray, eq, asc } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { firstOrNull } from "../../db/helpers.js";
@@ -143,6 +143,20 @@ export async function findAllRarities(conn: Connection = db) {
 export async function findTaskByUserForUpdate(userId: string, conn: Connection) {
     const rows = await conn.select().from(task).where(eq(task.userId, userId)).for("update");
     return firstOrNull(rows)
+}
+
+export async function findEquipment(equipmentId: string, conn: Connection = db) {
+    const rows = await conn.select().from(equipment).where(eq(equipment.id, equipmentId));
+    return firstOrNull(rows)
+}
+
+// The rarities this equipment has stats for, i.e. the rarities it can be crafted at
+export async function findEquipmentRarityIds(equipmentId: string, conn: Connection = db): Promise<string[]> {
+    const rows = await conn
+        .select({ rarityId: equipmentStats.rarityId })
+        .from(equipmentStats)
+        .where(eq(equipmentStats.equipmentId, equipmentId));
+    return rows.map((r) => r.rarityId);
 }
 
 export async function updateTaskAfterClaim(taskId: string, lastClaimedAt: Date, completedCount: number, conn: Connection = db) {

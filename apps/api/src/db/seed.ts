@@ -60,8 +60,8 @@ async function seed() {
             });
 
         await tx.insert(recipes)
-            .values(Object.entries(RECIPES).map(([id, { name, category, output, levelRequirement }]) => ({
-                id, name, categoryId: category, outputEquipmentId: output, levelRequirement,
+            .values(Object.entries(RECIPES).map(([id, { name, category, output, levelRequirement, progressRequirement, qualityRequirement }]) => ({
+                id, name, categoryId: category, outputEquipmentId: output, levelRequirement, progressRequirement, qualityRequirement,
             })))
             .onConflictDoUpdate({ target: recipes.id, set: updateAllExcept(recipes, ["id"]) });
 

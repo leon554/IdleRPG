@@ -1,14 +1,10 @@
-import { View, Text, FlatList} from 'react-native'
-import { useMemo, useState } from 'react'
+import { View, Text } from 'react-native'
+import { useState } from 'react'
 import { Modal } from '../../primitives/Modal'
-import { Card } from '../../primitives/Card'
-import { useStore } from '@/lib/store'
-import { Recipe, ResourceStack} from '@idlerpg/shared'
+import type { Action, Recipe, ResourceStack } from '@idlerpg/shared'
 import { Button } from '../../primitives/Button'
-import { GameDataUtil } from '@/util/game-data-util'
-import { inventoryStore } from '@/stores/inventory'
-import { colors } from '@/theme'
 import ResourceSelectionCard from './ResourceSlectionCard'
+import RotationSelectionCard from './RotationSelectionCard'
 
 interface Props{
     openModal: boolean
@@ -17,37 +13,42 @@ interface Props{
     selectedRecipe: Recipe
 }
 
-export default function CraftModal({openModal, setOpenModal, categoryId, selectedRecipe}: Props) {
+export default function CraftModal({openModal, setOpenModal, selectedRecipe}: Props) {
     const [selectedResources, setSelectedResources] = useState<ResourceStack[]>([])
     const [enoughResources, setEnoughResources] = useState(false)
+    const [usedActions, setUsedActions] = useState<Action[]>([])
 
     const [currentPage, setCurrentPage] = useState<"ResourceSelection" | "RotationSelection">("ResourceSelection")
-
-    function handleNextPress(){
-        if(currentPage == "ResourceSelection"){
-            setCurrentPage("RotationSelection")
-        }
-    }
 
     return (
         <Modal visible={openModal} onClose={() => setOpenModal(false)} className='gap-3'>
             <Text className="text-textPrimary text-lg font-medium">{selectedRecipe.recipe.name}</Text>
-            {currentPage == "ResourceSelection" && 
-                <ResourceSelectionCard 
-                    selectedRecipe={selectedRecipe} 
-                    selectedResources={selectedResources} 
+            {currentPage == "ResourceSelection" && <>
+                <ResourceSelectionCard
+                    selectedRecipe={selectedRecipe}
+                    selectedResources={selectedResources}
                     setSelectedResources={setSelectedResources}
                     setEnoughResources={setEnoughResources}
                 />
-            }
-            <View className='flex-row w-full justify-end'>
-                <Button
-                    title='Next'
-                    size='sm'
-                    disabled={!enoughResources}
-                    onPress={() => handleNextPress()}
+                <View className='flex-row w-full justify-end'>
+                    <Button
+                        title='Next'
+                        size='sm'
+                        disabled={!enoughResources}
+                        onPress={() => setCurrentPage("RotationSelection")}
+                    />
+                </View>
+            </>}
+            {currentPage == "RotationSelection" &&
+                <RotationSelectionCard
+                    selectedRecipe={selectedRecipe}
+                    selectedResources={selectedResources}
+                    usedActions={usedActions}
+                    setUsedActions={setUsedActions}
+                    onBack={() => setCurrentPage("ResourceSelection")}
+                    onStarted={() => setOpenModal(false)}
                 />
-            </View>
+            }
         </Modal>
     )
 }

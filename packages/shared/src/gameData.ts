@@ -43,6 +43,14 @@ export type RarityId = keyof typeof RARITIES;
 export const CALCULATE_RARITIES_ODDS_SUM = (rarities: Record<string, RarityDef>) => Object.values(rarities).reduce((a, c) => a + c.odds, 0)
 
 
+export const CRAFT_INPUT_RARITY_BONUS = 0.5;
+
+export const craftRarityMultiplier = (qualityRatio: number, inputs: { tier: number; amount: number }[]): number => {
+  const totalAmount = inputs.reduce((sum, i) => sum + i.amount, 0);
+  const averageTier = totalAmount > 0 ? inputs.reduce((sum, i) => sum + i.tier * i.amount, 0) / totalAmount : 1;
+  return qualityRatio + (averageTier - 1) * CRAFT_INPUT_RARITY_BONUS;
+};
+
 export const unitSellPrice = (vendorPrice: number, tier: number): number => vendorPrice ** tier;
 
 export const CATEGORIES = {
@@ -190,16 +198,20 @@ export type RecipeDef = {
   category: CategoryId;
   output: EquipmentId;      
   levelRequirement: number;
+  progressRequirement: number;
+  qualityRequirement: number;
   inputs: Partial<Record<ResourceId, number>>; 
 };
 
 export const RECIPES = {
   bronze_pickaxe: {
-    name: "Bronze Pickaxe", category: "smithing", output: "bronze_pickaxe", levelRequirement: 1,
+    name: "Bronze Pickaxe", category: "smithing", output: "bronze_pickaxe", levelRequirement: 0,
+    progressRequirement: 100, qualityRequirement: 50,
     inputs: { copper_ore: 5, oak_log: 2 },
   },
   bronze_axe: {
-    name: "Bronze Axe", category: "smithing", output: "bronze_axe", levelRequirement: 1,
+    name: "Bronze Axe", category: "smithing", output: "bronze_axe", levelRequirement: 0,
+    progressRequirement: 100, qualityRequirement: 50,
     inputs: { copper_ore: 4, oak_log: 3 },
   },
 } satisfies Record<string, RecipeDef>;

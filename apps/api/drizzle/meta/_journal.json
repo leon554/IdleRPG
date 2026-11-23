@@ -64,6 +64,20 @@
       "when": 1795315496840,
       "tag": "0008_unique_ultimo",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795393615311,
+      "tag": "0009_sloppy_angel",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795395612560,
+      "tag": "0010_chemical_golden_guardian",
+      "breakpoints": true
     }
   ]
 }

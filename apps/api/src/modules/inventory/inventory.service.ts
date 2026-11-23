@@ -33,6 +33,33 @@ export async function addResources(
     await inventoryRepo.addToResourceStacks(inventoryId, stacks, conn);
 }
 
+export async function addEquipment(
+    userId: string,
+    stacks: { equipmentId: string; rarityId: string; amount: number }[],
+    conn: Connection = db,
+) {
+    if (stacks.length === 0) return
+    const inventoryId = await getOrCreateInventoryId(userId, conn);
+    await inventoryRepo.addToEquipmentStacks(inventoryId, stacks, conn);
+}
+
+// Removes these amounts from the user's resource stacks, deleting any that hit 0.
+// Each take is atomic, so if a stack ran short in the meantime this throws and the transaction rolls back.
+export async function takeResources(
+    userId: string,
+    stacks: { resourceId: string; rarityId: string; amount: number }[],
+    conn: Connection = db,
+) {
+    const inventoryId = await getUserInventoryId(userId, conn);
+
+    for (const { resourceId, rarityId, amount } of stacks) {
+        if (amount <= 0) continue;
+        const remaining = await inventoryRepo.takeFromStack(inventoryId, "resource", resourceId, rarityId, amount, conn);
+        if (remaining === null) throw badRequest("not_enough_resources", { resourceId, rarityId });
+        if (remaining === 0) await inventoryRepo.deleteEmptyStack(inventoryId, "resource", resourceId, rarityId, conn);
+    }
+}
+
 export async function getInventory(userId: string): Promise<Inventory> {
     const inv = await inventoryRepo.findInventoryByUser(userId);
     if (!inv) {

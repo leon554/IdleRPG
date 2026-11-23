@@ -1,4 +1,4 @@
-import { EquipmentDef, RecipeDef, ResourceDef } from "./gameData.js";
+import type { EquipmentDef, ResourceDef } from "./gameData.js";
 
 export * from "./gameData.js"
 export * from "./errors.js"
@@ -92,7 +92,7 @@ export type EquipmentStats = {
 }
 
 export type Recipe = {
-    recipe: RecipeDef,
+    recipe: RecipeInfo,
     categoryName: string,
     categoryId: string,
     outputEquipment: Equipment,
@@ -128,13 +128,18 @@ export type TaskTarget =
 
 export type TaskActionEntry = Action & { position: number };
 
-export type ActiveTaskRecipe = {
+// A recipes row, as the API returns it
+export type RecipeInfo = {
     id: string;
     name: string;
     categoryId: string;
     outputEquipmentId: string;
     levelRequirement: number;
+    progressRequirement: number;
+    qualityRequirement: number;
 };
+
+export type ActiveTaskRecipe = RecipeInfo;
 
 export type ActiveTaskRequiredResource = {
     resourceId: string;
@@ -199,6 +204,7 @@ export type ClaimResult = {
     successfulCycles: number;  // cycles whose rotation met the progress requirement
     items: ClaimedItem[];
     nextCycleAt: Date;         // when the next cycle completes (the leftover time is kept)
+    taskEnded: boolean;        // the claim finished the task and removed it (crafts done, or out of resources)
 };
 
 // ── Inventory ─────────────────────────────────────────────────────

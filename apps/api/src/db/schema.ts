@@ -190,11 +190,13 @@ export const recipes = pgTable(
     name: text().notNull(),
     categoryId: text().notNull().references(() => categories.id, { onDelete: "restrict" }),
     outputEquipmentId: text().notNull().references(() => equipment.id, { onDelete: "restrict" }),
-    levelRequirement: integer().notNull().default(1),
+    levelRequirement: integer().notNull().default(0),
+    progressRequirement: integer().notNull().default(100),
+    qualityRequirement: integer().notNull().default(50),
   },
   (t) => [
     unique("recipes_name_unique").on(t.name),
-    check("recipes_levelRequirement_check", sql`${t.levelRequirement} >= 1`),
+    check("recipes_levelRequirement_check", sql`${t.levelRequirement} >= 0`),
     index("recipes_categoryId_index").on(t.categoryId),
   ],
 );

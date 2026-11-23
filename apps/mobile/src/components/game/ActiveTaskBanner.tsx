@@ -18,6 +18,7 @@ export function ActiveTaskBanner() {
     const activeTask = useStore(taskStore, (s) => s.activeTask);
     const state = useStore(taskStore, (s) => s.status);
     const groupName = useStore(staticDataStore, (s) => s.gatheringGroups.find((g) => g.id === activeTask?.gatheringGroupId)?.name);
+    const taskName = activeTask?.taskType === "crafting" ? activeTask.recipe.name : groupName;
     const now = useNow()
 
     useEffect(() => {
@@ -34,7 +35,7 @@ export function ActiveTaskBanner() {
         try {
             const result = await claimTask();
             if (result.cyclesClaimed === 0) return toast.info("Nothing to claim yet");
-            toast.success(result.items.map(i => (i.type == "equipment" ? "" : `[${i.resource.itemName}, ${i.rarity.name}, ${i.amount}]`)).join(", "))
+            toast.success(result.items.map(i => `[${i.type == "equipment" ? i.equipment.name : i.resource.itemName}, ${i.rarity.name}, ${i.amount}]`).join(", "))
         } catch (error) {
             refresh("task")
             toast.error(errorMessage(error));
@@ -45,7 +46,7 @@ export function ActiveTaskBanner() {
         try {
             const result = await stopTask();
             if (!result || result.items.length === 0) return toast.info("Task stopped")
-            toast.success(result.items.map(i => (i.type == "equipment" ? "" : `[${i.resource.itemName}, ${i.rarity.name}, ${i.amount}]`)).join(", "))
+            toast.success(result.items.map(i => `[${i.type == "equipment" ? i.equipment.name : i.resource.itemName}, ${i.rarity.name}, ${i.amount}]`).join(", "))
         } catch (error) {
             toast.error(errorMessage(error));
         }
@@ -60,7 +61,7 @@ export function ActiveTaskBanner() {
                     <View className="gap-1  w-[80%]">
                         <View className="flex-row items-center gap-3">
                             <Text className="text-textPrimary font-semibold">
-                                {groupName}
+                                {taskName}
                             </Text>
                             <Text className='text-textMuted text-xs'>
                                 {GameDataUtil.formatDuration(now - activeTask.startTime.getTime())}

@@ -50,6 +50,18 @@ export async function addToResourceStacks( inventoryId: string, stacks: { resour
         });
 }
 
+export async function addToEquipmentStacks(inventoryId: string, stacks: { equipmentId: string; rarityId: string; amount: number }[], conn: Connection = db) {
+    if (stacks.length === 0) return
+
+    await conn
+        .insert(equipmentCollection)
+        .values(stacks.map((s) => ({ inventoryId, equipmentId: s.equipmentId, rarityId: s.rarityId, quantity: s.amount })))
+        .onConflictDoUpdate({
+            target: [equipmentCollection.inventoryId, equipmentCollection.equipmentId, equipmentCollection.rarityId],
+            set: { quantity: sql`${equipmentCollection.quantity} + excluded.quantity` },
+        });
+}
+
 export async function findInventoryByUser(userId: string, conn: Connection = db) {
     const rows = await conn
         .select({ id: inventory.id, gold: inventory.gold, maxSpace: inventory.maxSpace })

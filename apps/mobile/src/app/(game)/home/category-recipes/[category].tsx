@@ -11,7 +11,7 @@ import { capitliseFirst } from '@/auth/util';
 import { rarityColors } from '@/theme';
 import { Button } from '@/components/primitives/Button';
 import { useState } from 'react';
-import CraftModal from '@/components/game/CraftModal';
+import CraftModal from '@/components/game/craft/CraftModal';
 
 export default function ReipeScreen() {
     const { category } = useLocalSearchParams<{ category: string }>();

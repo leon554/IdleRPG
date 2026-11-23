@@ -12,6 +12,7 @@ import { rarityColors } from '@/theme';
 import { Button } from '@/components/primitives/Button';
 import { useState } from 'react';
 import CraftModal from '@/components/game/craft/CraftModal';
+import { CategoryProgressCard } from '@/components/game/CategoryProgressCard';
 
 export default function ReipeScreen() {
     const { category } = useLocalSearchParams<{ category: string }>();
@@ -23,6 +24,7 @@ export default function ReipeScreen() {
     return (
         <Screen className="gap-4">
             <PageHeader name={capitliseFirst(category)} onPrev={() => {router.replace("/(game)/home/crafting")}}/>
+            <CategoryProgressCard categoryId={category} />
             <FlatList
                 data={recipes}
                 keyExtractor={(recipe) => String(recipe.outputEquipment.name)}

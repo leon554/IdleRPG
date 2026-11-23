@@ -5,12 +5,19 @@ import { GameDataUtil } from "@/util/game-data-util";
 const itemName = (i: ClaimedItem) => (i.type === "equipment" ? i.equipment.name : i.resource.itemName);
 const itemId = (i: ClaimedItem) => (i.type === "equipment" ? i.equipment.id : i.resource.id);
 
-export function ClaimedItemsToast({ items}: { items: ClaimedItem[]; title?: string }) {
+export function ClaimedItemsToast({ items, xp}: { items: ClaimedItem[]; xp: number }) {
     const sorted = [...items].sort((a, b) => b.rarity.tier - a.rarity.tier || itemName(a).localeCompare(itemName(b)));
 
     return (
         <View className="gap-1.5">
             <View className="flex-row flex-wrap gap-1.5">
+                <View
+                    className="w-fit rounded-md border border-border px-2 py-0.5"
+                >
+                    <Text className="text-xs font-semibold text-textSecondary">
+                        {GameDataUtil.formatCompactNumber(xp)}xp
+                    </Text>
+                </View>
                 {sorted.map((item) => (
                     <View
                         key={`${item.type}:${itemId(item)}:${item.rarity.id}`}

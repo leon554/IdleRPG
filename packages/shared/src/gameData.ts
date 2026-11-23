@@ -51,6 +51,31 @@ export const craftRarityMultiplier = (qualityRatio: number, inputs: { tier: numb
   return qualityRatio + (averageTier - 1) * CRAFT_INPUT_RARITY_BONUS;
 };
 
+export const MAX_LEVEL = 99;
+export const XP_CURVE = { firstLevelXp: 100, growth: 1.1 };
+
+export const xpForLevel = (level: number): number => {
+  if (level <= 1) return 0;
+  const { firstLevelXp, growth } = XP_CURVE;
+  return Math.floor((firstLevelXp * (growth ** (level - 1) - 1)) / (growth - 1));
+};
+
+
+export const levelForXp = (xp: number): number => {
+  if (xp <= 0) return 1;
+  const { firstLevelXp, growth } = XP_CURVE;
+
+  const estimate = Math.floor(Math.log((xp * (growth - 1)) / firstLevelXp + 1) / Math.log(growth)) + 1;
+  let level = Math.min(MAX_LEVEL, Math.max(1, estimate));
+
+  while (level < MAX_LEVEL && xp >= xpForLevel(level + 1)) level++;
+  while (level > 1 && xp < xpForLevel(level)) level--;
+  return level;
+};
+
+export const calculateXp = (xpRate: number, itemTier: number, rarityTier: number, amount = 1): number =>
+  xpRate * itemTier * rarityTier * amount;
+
 export const unitSellPrice = (vendorPrice: number, tier: number): number => vendorPrice ** tier;
 
 export const CATEGORIES = {

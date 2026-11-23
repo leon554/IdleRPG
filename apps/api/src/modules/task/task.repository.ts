@@ -1,5 +1,5 @@
 import { type Connection } from "../../types/db.js";
-import { actions, equipment, equipmentStats, rarity, resources, resourceGatheringGroup, recipes, requiredResources, task, taskAction, taskRecipeInput, gatheringGroupSecondaryResources } from "../../db/schema.js";
+import { actions, categories, equipment, equipmentStats, rarity, resources, resourceGatheringGroup, recipes, requiredResources, task, taskAction, taskRecipeInput, gatheringGroupSecondaryResources } from "../../db/schema.js";
 import { inArray, eq, asc } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { firstOrNull } from "../../db/helpers.js";
@@ -144,6 +144,11 @@ export async function findAllRarities(conn: Connection = db) {
 export async function findTaskByUserForUpdate(userId: string, conn: Connection) {
     const rows = await conn.select().from(task).where(eq(task.userId, userId)).for("update");
     return firstOrNull(rows)
+}
+
+export async function findCategoryXpRate(categoryId: string, conn: Connection = db): Promise<number> {
+    const rows = await conn.select({ xpRate: categories.xpRate }).from(categories).where(eq(categories.id, categoryId));
+    return firstOrNull(rows)?.xpRate ?? 0;
 }
 
 export async function findEquipment(equipmentId: string, conn: Connection = db) {

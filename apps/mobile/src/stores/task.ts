@@ -32,7 +32,7 @@ const startTask = async (path: string, body: object) => {
     taskStore.setState({ starting: true });
     try {
         await request(path, { method: "POST", body: JSON.stringify(body) });
-        await refresh("task", "inventory"); // replacing a task pays out the old one
+        await refresh("task", "inventory", "progress"); // replacing a task pays out the old one (items and XP)
     } catch (error) {
         if (isApiError(error, "task_already_active")) await loadActiveTask().catch(() => {});
         throw error; 
@@ -52,7 +52,7 @@ export const claimTask = async (): Promise<ClaimResult> => {
     taskStore.setState({ status: "loading" });
     try {
         const result = await request<ClaimResult>("/gamedata/tasks/claim", { method: "POST" });
-        await refresh("task", "stats", "inventory");
+        await refresh("task", "stats", "inventory", "progress");
         return result;
     } finally {
         // Also runs when the request fails, so status never gets stuck on "loading"
@@ -65,7 +65,7 @@ export const stopTask = async (): Promise<ClaimResult | null> => {
     taskStore.setState({ status: "loading" });
     try {
         const result = await request<ClaimResult | null>("/gamedata/tasks/stop-task", { method: "POST" });
-        await refresh("task", "stats", "inventory");
+        await refresh("task", "stats", "inventory", "progress");
         return result;
     } finally {
         taskStore.setState({ status: "ready" });

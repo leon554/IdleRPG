@@ -198,6 +198,7 @@ export type Rarity = {
     color: string;
     odds: number;
 };
+export type CategoryProgress = { categoryId: string, level: number; xp: number };
 
 // One stack the claim added to the inventory. Equipment is listed for when crafting claims are added.
 export type ClaimedItem =
@@ -210,6 +211,7 @@ export type ClaimResult = {
     items: ClaimedItem[];
     nextCycleAt: Date;         // when the next cycle completes (the leftover time is kept)
     taskEnded: boolean;        // the claim finished the task and removed it (crafts done, or out of resources)
+    xp: number;                // XP added to the task's category by this claim
 };
 
 // ── Inventory ─────────────────────────────────────────────────────

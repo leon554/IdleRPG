@@ -39,7 +39,7 @@ export function ActiveTaskBanner() {
             const result = await claimTask();
             if (result.cyclesClaimed === 0) return toast.info("Nothing to claim yet");
             if (result.items.length === 0) return toast.info("No items this claim");
-            toast.success(<ClaimedItemsToast items={result.items} />)
+            toast.success(<ClaimedItemsToast items={result.items} xp={result.xp}/>)
         } catch (error) {
             refresh("task")
             toast.error(errorMessage(error));
@@ -50,7 +50,7 @@ export function ActiveTaskBanner() {
         try {
             const result = await stopTask();
             if (!result || result.items.length === 0) return toast.info("Task stopped")
-            toast.success(<ClaimedItemsToast items={result.items} title="Task stopped" />)
+            toast.success(<ClaimedItemsToast items={result.items} xp={result.xp} />)
         } catch (error) {
             toast.error(errorMessage(error));
         }

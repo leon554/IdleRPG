@@ -1,4 +1,4 @@
-import { craftRarityMultiplier, type Action, type ActiveTask, type CategoryStats, type ClaimedItem, type ClaimResult, type Rarity, type Resource, type TaskActionEntry, type TaskTarget } from "@idlerpg/shared";
+import { calculateXp, craftRarityMultiplier, type Action, type ActiveTask, type CategoryStats, type ClaimedItem, type ClaimResult, type Rarity, type Resource, type TaskActionEntry, type TaskTarget } from "@idlerpg/shared";
 import { db } from "../../db/index.js";
 import type { Connection } from "../../types/db.js";
 import { isUniqueViolation } from "../../errorHandler.js";
@@ -93,7 +93,7 @@ async function claimGatherTask(userId: string, task: LockedTask, gatheringGroupI
     await inventoryService.getOrCreateInventoryId(userId, tx);
 
     const { cycles, claimedUntil, nextCycleAt } = countCycles(task.lastClaimedAt, task.cycleMs);
-    if (cycles === 0) return { cyclesClaimed: 0, successfulCycles: 0, items: [], nextCycleAt, taskEnded: false };
+    if (cycles === 0) return { cyclesClaimed: 0, successfulCycles: 0, items: [], nextCycleAt, taskEnded: false, xp: 0 };
 
     const group = await taskRepo.findGatheringGroupWithMainResource(gatheringGroupId, tx);
     const secondaryResources = await taskRepo.findGatheringGroupSecondaryResources(gatheringGroupId, tx);
@@ -104,6 +104,7 @@ async function claimGatherTask(userId: string, task: LockedTask, gatheringGroupI
     if (!group?.mainResource) throw notFound("gathering_group_not_found");
 
     const mainResource = group.mainResource;
+    const xpRate = await taskRepo.findCategoryXpRate(mainResource.categoryId, tx);
     const rotation = calculateRotation(actions, statsPerCategory[mainResource.categoryId]);
     const succeeded = rotation.progress >= mainResource.progressRequirement;
     const successfulCycles = succeeded ? cycles : 0;
@@ -116,33 +117,38 @@ async function claimGatherTask(userId: string, task: LockedTask, gatheringGroupI
     const amountPerCycle = mainAmountPerCycle(rotation.yield, mainResource.yieldRequirement);
 
     const loot = new LootTally();
+    // XP is per successful cycle, from the main resource's tier and rolled rarity (yield and secondary drops don't add XP)
+    let xpEarned = 0;
     for (let i = 0; i < successfulCycles; i++) {
-        loot.add(mainResource, getItemRarity(boostedRarities).id, amountPerCycle);
+        const mainRarity = getItemRarity(boostedRarities);
+        loot.add(mainResource, mainRarity, amountPerCycle);
+        xpEarned += calculateXp(xpRate, mainResource.tier, mainRarity.tier);
 
         for (const secondary of secondaryResources) {
             if (Math.random() < secondary.dropChance) {
-                loot.add(secondary.resource, getItemRarity(boostedRarities).id, 1);
+                loot.add(secondary.resource, getItemRarity(boostedRarities), 1);
             }
         }
     }
 
     await inventoryService.addResources(userId, loot.stacks(), tx);
     await taskRepo.updateTaskAfterClaim(task.id, claimedUntil, task.completedCount + successfulCycles, tx);
+    await progressService.addXp(userId, mainResource.categoryId, xpEarned, tx);
 
     const rarityById = new Map(rarities.map((r) => [r.id, r]));
-    const items: ClaimedItem[] = loot.entries().map(({ resource, rarityId, amount }) => ({
+    const items: ClaimedItem[] = loot.entries().map(({ resource, rarity, amount }) => ({
         type: "resource",
         resource,
-        rarity: rarityById.get(rarityId)!,
+        rarity: rarityById.get(rarity.id)!,
         amount,
     }));
 
-    return { cyclesClaimed: cycles, successfulCycles, items, nextCycleAt, taskEnded: false };
+    return { cyclesClaimed: cycles, successfulCycles, items, nextCycleAt, taskEnded: false, xp: xpEarned };
 }
 
 async function claimCraftTask(userId: string, task: LockedTask, tx: Connection): Promise<ClaimResult> {
     const { cycles, claimedUntil, nextCycleAt } = countCycles(task.lastClaimedAt, task.cycleMs);
-    if (cycles === 0) return { cyclesClaimed: 0, successfulCycles: 0, items: [], nextCycleAt, taskEnded: false };
+    if (cycles === 0) return { cyclesClaimed: 0, successfulCycles: 0, items: [], nextCycleAt, taskEnded: false, xp: 0 };
 
     const recipe = task.recipeId ? await taskRepo.findRecipe(task.recipeId, tx) : null;
     if (!recipe) throw notFound("recipe_not_found");
@@ -154,6 +160,7 @@ async function claimCraftTask(userId: string, task: LockedTask, tx: Connection):
     const output = await taskRepo.findEquipment(recipe.outputEquipmentId, tx);
     const outputRarityIds = new Set(await taskRepo.findEquipmentRarityIds(recipe.outputEquipmentId, tx));
     const stats = (await getStatsPerCategory(userId))[recipe.categoryId];
+    const xpRate = await taskRepo.findCategoryXpRate(recipe.categoryId, tx);
 
     if (!output) throw notFound("recipe_not_found");
 
@@ -200,6 +207,11 @@ async function claimCraftTask(userId: string, task: LockedTask, tx: Connection):
     const stacks = [...craftedByRarity].map(([rarityId, amount]) => ({ equipmentId: output.id, rarityId, amount }));
     await inventoryService.addEquipment(userId, stacks, tx);
 
+    // One craft per cycle, so XP per crafted item: the output's tier and the rarity it rolled
+    const xpEarned = stacks.reduce((sum, { rarityId, amount }) =>
+        sum + calculateXp(xpRate, output.tier, rarityById.get(rarityId)!.tier, amount), 0);
+    await progressService.addXp(userId, recipe.categoryId, xpEarned, tx);
+
     const completedCount = task.completedCount + crafts;
     const taskEnded = completedCount >= (task.craftCount ?? 0) || affordable - crafts < 1;
 
@@ -213,7 +225,7 @@ async function claimCraftTask(userId: string, task: LockedTask, tx: Connection):
         amount,
     }));
 
-    return { cyclesClaimed: cycles, successfulCycles: crafts, items, nextCycleAt, taskEnded };
+    return { cyclesClaimed: cycles, successfulCycles: crafts, items, nextCycleAt, taskEnded, xp: xpEarned};
 }
 
 export async function stopTask(userId: string): Promise<ClaimResult | null> {
@@ -333,13 +345,13 @@ function mainAmountPerCycle(rotationYield: number, yieldRequirement: number) {
 
 
 class LootTally {
-    private readonly byKey = new Map<string, { resource: Resource; rarityId: string; amount: number }>();
+    private readonly byKey = new Map<string, { resource: Resource; rarity: Rarity; amount: number }>();
 
-    add(resource: Resource, rarityId: string, amount: number) {
-        const key = `${resource.id}:${rarityId}`;
+    add(resource: Resource, rarity: Rarity, amount: number) {
+        const key = `${resource.id}:${rarity.id}`;
         const entry = this.byKey.get(key);
         if (entry) entry.amount += amount;
-        else this.byKey.set(key, { resource, rarityId, amount });
+        else this.byKey.set(key, { resource, rarity, amount });
     }
 
     entries() {
@@ -347,6 +359,6 @@ class LootTally {
     }
 
     stacks() {
-        return this.entries().map(({ resource, rarityId, amount }) => ({ resourceId: resource.id, rarityId, amount }));
+        return this.entries().map(({ resource, rarity, amount }) => ({ resourceId: resource.id, rarityId: rarity.id, amount }));
     }
 }

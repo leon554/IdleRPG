@@ -59,6 +59,7 @@ export type GatheringGroup = {
         id: string;
         categoryId: string;
         itemName: string;
+        tier: number;
         progressRequirement: number;
         qualityRequirement: number;
         yieldRequirement: number;
@@ -78,6 +79,7 @@ export type Equipment = {
     name: string;
     categoryId: string | null; // null = universal, fits any category's slots
     typeId: string;
+    tier: number;
     levelRequirement: number;
     vendorPrice: number;
 };
@@ -182,6 +184,7 @@ export type Resource = {
     id: string;
     categoryId: string;
     itemName: string;
+    tier: number;
     progressRequirement: number;
     qualityRequirement: number;
     yieldRequirement: number;

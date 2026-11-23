@@ -4,25 +4,23 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type ToastType = "success" | "error" | "warning" | "info";
 type ToastOptions = { duration?: number };
+type ToastMessage = React.ReactNode;
 
 export const toast = {
-    show: (message: string, opts?: ToastOptions) => emit("info", message, opts),
-    info: (message: string, opts?: ToastOptions) => emit("info", message, opts),
-    success: (message: string, opts?: ToastOptions) => emit("success", message, opts),
-    warning: (message: string, opts?: ToastOptions) => emit("warning", message, opts),
-    error: (message: string, opts?: ToastOptions) => emit("error", message, opts),
+    show: (message: ToastMessage, opts?: ToastOptions) => emit("info", message, opts),
+    info: (message: ToastMessage, opts?: ToastOptions) => emit("info", message, opts),
+    success: (message: ToastMessage, opts?: ToastOptions) => emit("success", message, opts),
+    warning: (message: ToastMessage, opts?: ToastOptions) => emit("warning", message, opts),
+    error: (message: ToastMessage, opts?: ToastOptions) => emit("error", message, opts),
 };
 
-type ToastItem = { id: number; type: ToastType; message: string; duration: number };
+type ToastItem = { id: number; type: ToastType; message: ToastMessage; duration: number };
 
-// A stack of mounted hosts. A native Modal opens its own window above the app, so the
-// root host can't draw over it; Modal mounts its own ToastHost, and toasts always go to
-// the most recently mounted host (the topmost one).
 type Listener = (t: ToastItem) => void;
 const listeners: Listener[] = [];
 let nextId = 1;
 
-function emit(type: ToastType, message: string, opts?: ToastOptions) {
+function emit(type: ToastType, message: ToastMessage, opts?: ToastOptions) {
     listeners[listeners.length - 1]?.({ id: nextId++, type, message, duration: opts?.duration ?? 3000 });
 }
 
@@ -36,15 +34,13 @@ const VARIANTS: Record<ToastType, { icon: string; badge: string }> = {
     info: { icon: "i", badge: "bg-info" },
 };
 
-// `active` = false takes this host off the stack straight away (e.g. a Modal that's closing),
-// handing any toast it's showing to the host underneath, so the toast isn't stuck in a fading modal.
+
 export function ToastHost({ active = true }: { active?: boolean } = {}) {
     const insets = useSafeAreaInsets();
     const [item, setItem] = useState<ToastItem | null>(null);
     const y = useRef(new Animated.Value(HIDDEN_Y)).current;
     const opacity = useRef(new Animated.Value(0)).current;
     const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-    // The toast currently on screen (null once it starts hiding), so it can be handed on when this host goes inactive
     const showing = useRef<ToastItem | null>(null);
 
     const hide = useCallback(() => {
@@ -75,7 +71,6 @@ export function ToastHost({ active = true }: { active?: boolean } = {}) {
             const index = listeners.lastIndexOf(listener);
             if (index !== -1) listeners.splice(index, 1);
             clearTimeout(timer.current);
-            // e.g. a Modal closing right after showing a toast: pass it to the host underneath so it isn't lost
             const pending = showing.current;
             showing.current = null;
             setItem(null);
@@ -115,9 +110,13 @@ export function ToastHost({ active = true }: { active?: boolean } = {}) {
                 <View className={`mr-3 h-6 w-6 items-center justify-center rounded-full ${v.badge}`}>
                     <Text className="text-sm font-bold text-background">{v.icon}</Text>
                 </View>
-                <Text className="flex-1 text-[15px] font-medium text-textPrimary" numberOfLines={3}>
-                    {item.message}
-                </Text>
+                {typeof item.message === "string" || typeof item.message === "number" ? (
+                    <Text className="flex-1 text-[15px] font-medium text-textPrimary" numberOfLines={3}>
+                        {item.message}
+                    </Text>
+                ) : (
+                    <View className="flex-1">{item.message}</View>
+                )}
             </Pressable>
         </Animated.View>
     );

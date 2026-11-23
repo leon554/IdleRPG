@@ -45,8 +45,8 @@ async function seed() {
             .onConflictDoUpdate({ target: slots.id, set: updateAllExcept(slots, ["id"]) });
 
         await tx.insert(equipment)
-            .values(Object.entries(EQUIPMENT).map(([id, { category, type, name, levelRequirement, vendorPrice }]) => ({
-                id, categoryId: category, typeId: type, name, levelRequirement, vendorPrice,
+            .values(Object.entries(EQUIPMENT).map(([id, { category, type, name, tier, levelRequirement, vendorPrice }]) => ({
+                id, categoryId: category, typeId: type, name, tier, levelRequirement, vendorPrice,
             })))
             .onConflictDoUpdate({ target: equipment.id, set: updateAllExcept(equipment, ["id"]) });
           

@@ -71,6 +71,7 @@ export type EquipmentTypeId = keyof typeof EQUIPMENT_TYPES;
 export type ResourceDef = {
   category: CategoryId;
   itemName: string;
+  tier: number;   // item tier (1 = basic material), separate from rarity tier
   progressRequirement: number;
   qualityRequirement: number;
   yieldRequirement: number;
@@ -79,19 +80,19 @@ export type ResourceDef = {
 
 export const RESOURCES = {
   copper_ore: {
-    category: "mining", itemName: "Copper Ore",
+    category: "mining", itemName: "Copper Ore", tier: 1,
     progressRequirement: 100, qualityRequirement: 50, yieldRequirement: 100, vendorPrice: 2,
   },
   iron_ore: {
-    category: "mining", itemName: "Iron Ore",
+    category: "mining", itemName: "Iron Ore", tier: 2,
     progressRequirement: 250, qualityRequirement: 120, yieldRequirement: 100, vendorPrice: 5,
   },
   stone: {
-    category: "mining", itemName: "Stone",
+    category: "mining", itemName: "Stone", tier: 1,
     progressRequirement: 50, qualityRequirement: 20, yieldRequirement: 100, vendorPrice: 1,
   },
   oak_log: {
-    category: "woodcutting", itemName: "Oak Log",
+    category: "woodcutting", itemName: "Oak Log", tier: 1,
     progressRequirement: 100, qualityRequirement: 50, yieldRequirement: 100, vendorPrice: 2,
   },
 } satisfies Record<string, ResourceDef>;
@@ -144,6 +145,7 @@ export type EquipmentDef = {
   name: string;
   category: CategoryId | null; 
   type: EquipmentTypeId;
+  tier: number;   // item tier (1 = basic gear), separate from rarity tier
   levelRequirement: number;
   vendorPrice: number;
   stats: Partial<Record<RarityId, EquipmentStatsDef>>; 
@@ -151,7 +153,7 @@ export type EquipmentDef = {
 
 export const EQUIPMENT = {
   bronze_pickaxe: {
-    name: "Bronze Pickaxe", category: "mining", type: "pickaxe", levelRequirement: 1, vendorPrice: 20,
+    name: "Bronze Pickaxe", category: "mining", type: "pickaxe", tier: 1, levelRequirement: 1, vendorPrice: 20,
     stats: {
       common: { progress: 10, quality: 5, yield: 1, gatheringPoints: 1 },
       rare:   { progress: 14, quality: 8, yield: 1.2, gatheringPoints: 2 },
@@ -161,13 +163,13 @@ export const EQUIPMENT = {
     },
   },
   bronze_axe: {
-    name: "Bronze Axe", category: "woodcutting", type: "axe", levelRequirement: 1, vendorPrice: 20,
+    name: "Bronze Axe", category: "woodcutting", type: "axe", tier: 1, levelRequirement: 1, vendorPrice: 20,
     stats: {
       common: { progress: 10, quality: 5, yield: 1, gatheringPoints: 1 },
     },
   },
   lucky_charm: {
-    name: "Lucky Charm", category: null, type: "charm", levelRequirement: 5, vendorPrice: 100,
+    name: "Lucky Charm", category: null, type: "charm", tier: 1, levelRequirement: 5, vendorPrice: 100,
     stats: {
       rare: { progress: 0, quality: 10, yield: 1.1, gatheringPoints: 0 },
     },

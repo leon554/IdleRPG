@@ -96,6 +96,7 @@ export const resources = pgTable(
     id: text().primaryKey(),
     categoryId: text().notNull().references(() => categories.id, { onDelete: "restrict" }),
     itemName: text().notNull(),
+    tier: integer().notNull().default(1),
     progressRequirement: integer().notNull().default(0),
     qualityRequirement: integer().notNull().default(0),
     yieldRequirement: integer().notNull().default(0),
@@ -108,6 +109,7 @@ export const resources = pgTable(
       sql`${t.progressRequirement} >= 0 AND ${t.qualityRequirement} >= 0 AND ${t.yieldRequirement} >= 0`,
     ),
     check("resources_vendorPrice_check", sql`${t.vendorPrice} >= 0`),
+    check("resources_tier_check", sql`${t.tier} >= 1`),
     index("resources_categoryId_index").on(t.categoryId),
   ],
 );
@@ -120,6 +122,7 @@ export const equipment = pgTable(
     // NULL = universal, fits any category's slots
     categoryId: text().references(() => categories.id, { onDelete: "restrict" }),
     typeId: text().notNull().references(() => equipmentType.id, { onDelete: "restrict" }),
+    tier: integer().notNull().default(1),
     levelRequirement: integer().notNull().default(1),
     vendorPrice: bigint({ mode: "number" }).notNull().default(0),
   },
@@ -127,6 +130,7 @@ export const equipment = pgTable(
     unique("equipment_name_unique").on(t.name),
     check("equipment_levelRequirement_check", sql`${t.levelRequirement} >= 1`),
     check("equipment_vendorPrice_check", sql`${t.vendorPrice} >= 0`),
+    check("equipment_tier_check", sql`${t.tier} >= 1`),
     index("equipment_categoryId_index").on(t.categoryId),
     index("equipment_typeId_index").on(t.typeId),
   ],

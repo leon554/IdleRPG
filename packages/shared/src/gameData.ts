@@ -182,12 +182,13 @@ export type ActionDef = {
   qualityMultiplier: number;
   progressMultiplier: number;
   gatheringPointCost: number;
+  delaySeconds: number;   // added to the task's cycle length for each time the action is in the rotation
 };
 
 export const ACTIONS = {
-  basic_strike:   { name: "Basic Strike",   yieldMultiplier: 1.3, qualityMultiplier: 0.6,  progressMultiplier: 2, gatheringPointCost: 20 },
-  careful_strike: { name: "Careful Strike", yieldMultiplier: 1.5, qualityMultiplier: 1.5, progressMultiplier: 1.5, gatheringPointCost: 30 },
-  bountiful_hit:  { name: "Bountiful Hit",  yieldMultiplier: 1, qualityMultiplier: 1,  progressMultiplier: 3, gatheringPointCost: 40 },
+  basic_strike:   { name: "Basic Strike",   yieldMultiplier: 1.3, qualityMultiplier: 0.6,  progressMultiplier: 2, gatheringPointCost: 20, delaySeconds: 0.5 },
+  careful_strike: { name: "Careful Strike", yieldMultiplier: 1.5, qualityMultiplier: 1.5, progressMultiplier: 1.5, gatheringPointCost: 30, delaySeconds: 0.5 },
+  bountiful_hit:  { name: "Bountiful Hit",  yieldMultiplier: 1, qualityMultiplier: 1,  progressMultiplier: 3, gatheringPointCost: 40, delaySeconds: 0.5 },
 } satisfies Record<string, ActionDef>;
 
 export type ActionId = keyof typeof ACTIONS;

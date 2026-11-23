@@ -78,6 +78,13 @@
       "when": 1795395612560,
       "tag": "0010_chemical_golden_guardian",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795395925964,
+      "tag": "0011_dazzling_mac_gargan",
+      "breakpoints": true
     }
   ]
 }

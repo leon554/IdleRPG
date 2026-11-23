@@ -20,11 +20,14 @@ export function ActiveTaskBanner() {
     const groupName = useStore(staticDataStore, (s) => s.gatheringGroups.find((g) => g.id === activeTask?.gatheringGroupId)?.name);
     const taskName = activeTask?.taskType === "crafting" ? activeTask.recipe.name : groupName;
     const now = useNow()
+    // Time into the current cycle; each task has its own cycle length (base time + its actions' delays)
+    const elapsedMs = activeTask ? now - activeTask.lastClaimedAt.getTime() : 0
+    const remainingSeconds = activeTask ? Math.max(0, Math.ceil((activeTask.cycleMs - elapsedMs) / 1000)) : 0
 
     useEffect(() => {
         if (!activeTask) return
         if (state === "loading") return
-        if(now - activeTask.lastClaimedAt.getTime() > 8000){
+        if(elapsedMs > activeTask.cycleMs){
             onClaim()
         }
     }, [now])
@@ -68,10 +71,10 @@ export function ActiveTaskBanner() {
                             </Text>
                         </View>
                         <ProgressBar
-                            value={8 - Math.ceil((8000 - (now - activeTask.lastClaimedAt.getTime()))/1000)}
-                            max={7}
+                            value={Math.min(elapsedMs, activeTask.cycleMs)}
+                            max={activeTask.cycleMs}
                             size="sm"
-                            label={`Next Cycle: ${state == "loading" ? "loading...": Math.ceil((8000 - (now - activeTask.lastClaimedAt.getTime()))/1000)}s`}
+                            label={`Next Cycle: ${state == "loading" ? "loading..." : `${remainingSeconds}s`}`}
                         />
                     </View>
                     <Button

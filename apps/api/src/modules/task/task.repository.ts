@@ -43,7 +43,7 @@ export async function findRequiredResourcesForRecipe(recipeId: string, conn: Con
         .where(eq(requiredResources.recipeId, recipeId));
 }
 
-export async function insertTask(userId: string, target: TaskTarget, conn: Connection = db) {
+export async function insertTask(userId: string, target: TaskTarget, cycleMs: number, conn: Connection = db) {
     const [created] = await conn
         .insert(task)
         .values({
@@ -51,6 +51,7 @@ export async function insertTask(userId: string, target: TaskTarget, conn: Conne
             gatheringGroupId: target.type === "gather" ? target.gatheringGroupId : null,
             recipeId: target.type === "craft" ? target.recipeId : null,
             craftCount: target.type === "craft" ? target.craftCount : null,
+            cycleMs,
         })
         .returning();
 

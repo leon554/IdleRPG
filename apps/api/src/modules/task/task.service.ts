@@ -8,7 +8,7 @@ import * as inventoryService from "../inventory/inventory.service.js";
 import * as progressService from "../progress/progress.service.js";
 import { applyRarityMultiplier, getItemRarity } from "../../util/gameUtil/random.js";
 import * as taskRepo from "./task.repository.js";
-import { TASK_DELAY } from "./task.constants.js";
+import { TASK_BASE_CYCLE_SECONDS } from "./task.constants.js";
 import type { CraftTarget, RequiredResource, TaskRequirements } from "./task.types.js";
 
 type RotationAction = Pick<Action, "progressMultiplier" | "qualityMultiplier" | "yieldMultiplier" | "gatheringPointCost">;
@@ -30,7 +30,7 @@ export async function createTask(userId: string, target: TaskTarget, actionIds: 
 
             if (current) await taskRepo.deleteTaskByUser(userId, tx);
 
-            const created = await taskRepo.insertTask(userId, target, tx);
+            const created = await taskRepo.insertTask(userId, target, cycleLengthMs(rotation), tx);
             await taskRepo.insertTaskActions(created.id, actionIds, tx);
 
             const inputs = target.type === "craft" ? target.inputs : [];
@@ -76,16 +76,13 @@ export async function claimTask(userId: string): Promise<ClaimResult> {
 
 type LockedTask = NonNullable<Awaited<ReturnType<typeof taskRepo.findTaskByUserForUpdate>>>;
 
-// Pays out every full cycle since the last claim. The caller must hold the task row lock.
 async function claimLockedTask(userId: string, task: LockedTask, tx: Connection): Promise<ClaimResult> {
     return task.gatheringGroupId !== null
         ? claimGatherTask(userId, task, task.gatheringGroupId, tx)
         : claimCraftTask(userId, task, tx);
 }
 
-// Full cycles since lastClaimedAt; claimedUntil moves forward by whole cycles so leftover time is kept
-function countCycles(lastClaimedAt: Date) {
-    const cycleMs = TASK_DELAY * 1000;
+function countCycles(lastClaimedAt: Date, cycleMs: number) {
     const cycles = Math.floor((Date.now() - lastClaimedAt.getTime()) / cycleMs);
     const claimedUntil = new Date(lastClaimedAt.getTime() + cycles * cycleMs);
     const nextCycleAt = new Date(claimedUntil.getTime() + cycleMs);
@@ -95,7 +92,7 @@ function countCycles(lastClaimedAt: Date) {
 async function claimGatherTask(userId: string, task: LockedTask, gatheringGroupId: string, tx: Connection): Promise<ClaimResult> {
     await inventoryService.getOrCreateInventoryId(userId, tx);
 
-    const { cycles, claimedUntil, nextCycleAt } = countCycles(task.lastClaimedAt);
+    const { cycles, claimedUntil, nextCycleAt } = countCycles(task.lastClaimedAt, task.cycleMs);
     if (cycles === 0) return { cyclesClaimed: 0, successfulCycles: 0, items: [], nextCycleAt, taskEnded: false };
 
     const group = await taskRepo.findGatheringGroupWithMainResource(gatheringGroupId, tx);
@@ -144,7 +141,7 @@ async function claimGatherTask(userId: string, task: LockedTask, gatheringGroupI
 }
 
 async function claimCraftTask(userId: string, task: LockedTask, tx: Connection): Promise<ClaimResult> {
-    const { cycles, claimedUntil, nextCycleAt } = countCycles(task.lastClaimedAt);
+    const { cycles, claimedUntil, nextCycleAt } = countCycles(task.lastClaimedAt, task.cycleMs);
     if (cycles === 0) return { cyclesClaimed: 0, successfulCycles: 0, items: [], nextCycleAt, taskEnded: false };
 
     const recipe = task.recipeId ? await taskRepo.findRecipe(task.recipeId, tx) : null;
@@ -324,6 +321,10 @@ function calculateRotation(actions: RotationAction[], stats: CategoryStats | und
     return total;
 }
 
+function cycleLengthMs(rotation: Pick<Action, "delaySeconds">[]): number {
+    const seconds = rotation.reduce((sum, a) => sum + a.delaySeconds, TASK_BASE_CYCLE_SECONDS);
+    return Math.round(seconds * 1000);
+}
 
 function mainAmountPerCycle(rotationYield: number, yieldRequirement: number) {
     if (yieldRequirement <= 0) return 1;

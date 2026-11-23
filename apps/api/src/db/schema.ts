@@ -177,9 +177,13 @@ export const actions = pgTable(
     yieldMultiplier: doublePrecision().notNull().default(0),
     qualityMultiplier: doublePrecision().notNull().default(0),
     progressMultiplier: doublePrecision().notNull().default(0),
-    gatheringPointCost: doublePrecision().notNull().default(0)
+    gatheringPointCost: doublePrecision().notNull().default(0),
+    delaySeconds: doublePrecision().notNull().default(0.5),
   },
-  (t) => [unique("actions_name_unique").on(t.name)],
+  (t) => [
+    unique("actions_name_unique").on(t.name),
+    check("actions_delaySeconds_check", sql`${t.delaySeconds} >= 0`),
+  ],
 );
 
 
@@ -337,6 +341,8 @@ export const task = pgTable(
     completedCount: integer().notNull().default(0),
     startTime: timestamptz().notNull().defaultNow(),
     lastClaimedAt: timestamptz().notNull().defaultNow(),
+    // Existing tasks keep the old fixed 8s cycle
+    cycleMs: integer().notNull().default(8000),
   },
   (t) => [
     unique("task_userId_unique").on(t.userId),
@@ -345,6 +351,7 @@ export const task = pgTable(
       "task_craftCount_check",
       sql`${t.craftCount} IS NULL OR (${t.craftCount} > 0 AND ${t.recipeId} IS NOT NULL)`,
     ),
+    check("task_cycleMs_check", sql`${t.cycleMs} > 0`),
     check(
       "task_completedCount_check",
       sql`${t.completedCount} >= 0 AND (${t.craftCount} IS NULL OR ${t.completedCount} <= ${t.craftCount})`,

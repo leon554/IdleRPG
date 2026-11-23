@@ -111,6 +111,7 @@ export type Action = {
     qualityMultiplier: number;
     progressMultiplier: number;
     gatheringPointCost: number;
+    delaySeconds: number;
 };
 
 export type CategoryStats = {
@@ -154,6 +155,7 @@ type ActiveTaskBase = {
     completedCount: number;
     startTime: Date;
     lastClaimedAt: Date;
+    cycleMs: number;           // length of one cycle: base time + every action's delay, fixed when the task starts
     actions: TaskActionEntry[];
 };
 

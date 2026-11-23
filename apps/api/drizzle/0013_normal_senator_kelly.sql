@@ -1,0 +1,1 @@
+ALTER TABLE "equippedItem" ADD CONSTRAINT "equippedItem_equipmentStats_fk" FOREIGN KEY ("equipmentId","rarityId") REFERENCES "public"."equipmentStats"("equipmentId","rarityId") ON DELETE restrict ON UPDATE no action;

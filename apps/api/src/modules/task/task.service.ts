@@ -1,5 +1,6 @@
 import { calculateXp, craftRarityMultiplier, type Action, type ActiveTask, type CategoryStats, type ClaimedItem, type ClaimResult, type Rarity, type Resource, type TaskActionEntry, type TaskTarget } from "@idlerpg/shared";
 import { db } from "../../db/index.js";
+import { lockUser } from "../../db/helpers.js";
 import type { Connection } from "../../types/db.js";
 import { isUniqueViolation } from "../../errorHandler.js";
 import { badRequest, conflict, forbidden, notFound } from "../../shared/errors.js";
@@ -16,6 +17,8 @@ type RotationAction = Pick<Action, "progressMultiplier" | "qualityMultiplier" | 
 export async function createTask(userId: string, target: TaskTarget, actionIds: string[]) {
     try {
         return await db.transaction(async (tx) => {
+            // Same per-user lock as equipping, so gear can't change in a category while a task there is being started
+            await lockUser(userId, tx);
             const current = await taskRepo.findTaskByUserForUpdate(userId, tx);
             const claim = current ? await claimLockedTask(userId, current, tx) : null;
 
@@ -49,7 +52,9 @@ export async function getActiveTask(userId: string): Promise<ActiveTask> {
     if (!activeTask) throw notFound("no_active_task");
 
     const { gatheringGroupId, recipeId, ...rest } = activeTask;
-    const base = { ...rest, actions: await taskRepo.findTaskActions(activeTask.id) };
+    const categoryId = await taskRepo.findTaskCategoryId(userId);
+    if (!categoryId) throw notFound(recipeId !== null ? "recipe_not_found" : "gathering_group_not_found");
+    const base = { ...rest, categoryId, actions: await taskRepo.findTaskActions(activeTask.id) };
 
     if (recipeId !== null) {
         const [recipe, requiredResources, inputs] = await Promise.all([
@@ -65,6 +70,11 @@ export async function getActiveTask(userId: string): Promise<ActiveTask> {
     return { taskType: "gathering", ...base, gatheringGroupId: gatheringGroupId!, recipeId: null };
 }
 
+
+// The category of the user's running task, or null when there's none (its gear slots are locked while it runs)
+export async function getActiveTaskCategoryId(userId: string, conn: Connection = db): Promise<string | null> {
+    return taskRepo.findTaskCategoryId(userId, conn);
+}
 
 export async function claimTask(userId: string): Promise<ClaimResult> {
     return db.transaction(async (tx) => {

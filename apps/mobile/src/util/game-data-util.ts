@@ -1,4 +1,4 @@
-import type { GatheringGroup, InventoryStack } from "@idlerpg/shared"
+import type { CategoryStats, GatheringGroup, InventoryStack } from "@idlerpg/shared"
 // Runtime values come from the file directly (like GatherModal's RARITIES): Metro can't resolve
 // the "./gameData.js" re-exports in the shared index, so only types are imported from "@idlerpg/shared"
 import { unitSellPrice } from "@idlerpg/shared/src/gameData"
@@ -51,6 +51,16 @@ export namespace GameDataUtil{
     export function getVendorSellPrice(stack: InventoryStack){
         const vendorPrice = stack.type == "equipment" ? stack.equipment.vendorPrice : stack.resource.vendorPrice
         return unitSellPrice(vendorPrice, stack.rarity.tier)
+    }
+
+    // How each stat changes going from `current` to `next` (positive = better)
+    export function statDiff(next: CategoryStats, current: CategoryStats): CategoryStats {
+        return {
+            progress: next.progress - current.progress,
+            quality: next.quality - current.quality,
+            yield: next.yield - current.yield,
+            gatheringPoints: next.gatheringPoints - current.gatheringPoints,
+        };
     }
 
     const COMPACT_UNITS = [

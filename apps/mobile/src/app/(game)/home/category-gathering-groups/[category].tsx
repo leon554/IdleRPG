@@ -12,12 +12,15 @@ import { useState } from 'react';
 import { Modal } from '@/components/primitives/Modal';
 import GatherModal from '@/components/game/GatherModal';
 import { CategoryProgressCard } from '@/components/game/CategoryProgressCard';
+import { SegmentedControl } from '@/components/primitives/SegmentedControl';
+import { EquipmentTab } from '@/components/game/equipment/EquipmentTab';
 
 export default function CategoryScreen() {
     const { category } = useLocalSearchParams<{ category: string }>();
     const ggsForCategory = useStore(staticDataStore, (s) => s.ggPerCategory[category]);
 
     const [selectedGatheringGroup, setSelectedGatheringGroup] = useState<GatheringGroup | null>(null)
+    const [tab, setTab] = useState<"gather" | "equipment">("gather")
 
     const ggs = ggsForCategory ?? [];
     const name = ggs[0]?.category ?? "Unknown category";
@@ -26,7 +29,13 @@ export default function CategoryScreen() {
         <Screen className="gap-3">
             <PageHeader name={name} onPrev={() => {router.replace("/(game)/home/gathering")}}/>
             <CategoryProgressCard categoryId={category} />
-            <FlatList
+            <SegmentedControl
+                options={[{ value: "gather", label: "Gather" }, { value: "equipment", label: "Equipment" }]}
+                value={tab}
+                onChange={setTab}
+            />
+            {tab === "equipment" && <EquipmentTab categoryId={category} />}
+            {tab === "gather" && <FlatList
                 data={ggs}
                 keyExtractor={(gg) => String(gg.id)}
                 contentContainerStyle={{ gap: 12 }}
@@ -73,6 +82,7 @@ export default function CategoryScreen() {
                     </Card>
                 )}
             />
+            }
             {selectedGatheringGroup && (
                 <GatherModal
                     key={selectedGatheringGroup.id}

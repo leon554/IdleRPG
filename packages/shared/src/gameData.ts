@@ -180,17 +180,23 @@ export const EQUIPMENT = {
   bronze_pickaxe: {
     name: "Bronze Pickaxe", category: "mining", type: "pickaxe", tier: 1, levelRequirement: 1, vendorPrice: 20,
     stats: {
-      common: { progress: 10, quality: 5, yield: 1, gatheringPoints: 1 },
-      rare:   { progress: 14, quality: 8, yield: 1.2, gatheringPoints: 2 },
-      epic: { progress: 10, quality: 5, yield: 1, gatheringPoints: 1 },
-      legendary:   { progress: 14, quality: 8, yield: 1.2, gatheringPoints: 2 },
-      mythical: { progress: 10, quality: 5, yield: 1, gatheringPoints: 1 },
+      common: { progress: 10, quality: 5, yield: 1, gatheringPoints: 10 },
+      rare:   { progress: 14, quality: 8, yield: 1.2, gatheringPoints: 20 },
+      epic: { progress: 20, quality: 10, yield: 10, gatheringPoints: 30 },
+      legendary:   { progress: 14, quality: 8, yield: 1.2, gatheringPoints: 40 },
+      mythical: { progress: 10, quality: 5, yield: 1, gatheringPoints: 50 },
     },
   },
   bronze_axe: {
     name: "Bronze Axe", category: "woodcutting", type: "axe", tier: 1, levelRequirement: 1, vendorPrice: 20,
     stats: {
       common: { progress: 10, quality: 5, yield: 1, gatheringPoints: 1 },
+    },
+  },
+  bronze_hammer: {
+    name: "Bronze Hammer", category: "smithing", type: "hammer", tier: 1, levelRequirement: 1, vendorPrice: 20,
+    stats: {
+      common: { progress: 10, quality: 5, yield: 0, gatheringPoints: 1 },
     },
   },
   lucky_charm: {
@@ -241,6 +247,11 @@ export const RECIPES = {
     name: "Bronze Axe", category: "smithing", output: "bronze_axe", levelRequirement: 0,
     progressRequirement: 100, qualityRequirement: 50,
     inputs: { copper_ore: 4, oak_log: 3 },
+  },
+  bronze_hammer: {
+    name: "Bronze Hammer", category: "smithing", output: "bronze_hammer", levelRequirement: 0,
+    progressRequirement: 100, qualityRequirement: 50,
+    inputs: { copper_ore: 5, oak_log: 2 },
   },
 } satisfies Record<string, RecipeDef>;
 

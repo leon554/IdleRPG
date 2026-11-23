@@ -158,6 +158,7 @@ type ActiveTaskBase = {
     startTime: Date;
     lastClaimedAt: Date;
     cycleMs: number;           // length of one cycle: base time + every action's delay, fixed when the task starts
+    categoryId: string;        // the category the task runs in (its gear slots are locked while it runs)
     actions: TaskActionEntry[];
 };
 
@@ -217,7 +218,13 @@ export type ClaimResult = {
 // ── Inventory ─────────────────────────────────────────────────────
 
 export type ResourceStack = { type: "resource"; resource: Resource; rarity: Rarity; quantity: number };
-export type EquipmentStack = { type: "equipment"; equipment: Equipment; rarity: Rarity; quantity: number };
+export type EquipmentStack = {
+    type: "equipment";
+    equipment: Equipment;
+    rarity: Rarity;
+    quantity: number;
+    stats: CategoryStats | null; // what one item adds when equipped; null = this rarity has no stats and can't be equipped
+};
 export type InventoryStack = ResourceStack | EquipmentStack;
 
 export type Inventory = {
@@ -243,3 +250,14 @@ export type SellResult = {
     gold: number;              // the player's gold after the sale
     remainingQuantity: number; // left in the stack (0 = the stack is gone)
 };
+
+// ── Equipment ─────────────────────────────────────────────────────
+
+export type Slot = { id: string; name: string; categoryId: string; equipmentTypeId: string };
+
+export type EquippedItem = { equipment: Equipment; rarity: Rarity; stats: CategoryStats };
+
+export type EquippedSlot = { slot: Slot; equipped: EquippedItem | null };
+
+export type EquipRequest = { slotId: string; equipmentId: string; rarityId: string };
+export type UnequipRequest = { slotId: string };

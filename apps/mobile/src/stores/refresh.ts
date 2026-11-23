@@ -2,15 +2,17 @@ import { statsStore, loadStats } from "./stats";
 import { taskStore, loadActiveTask } from "./task";
 import { inventoryStore, loadInventory } from "./inventory";
 import { loadProgress, progressStore } from "./progress";
+import { equipmentStore, loadEquipment } from "./equipment";
 
 const loaders = {
     stats: loadStats,
     task: loadActiveTask,
     inventory: loadInventory,
-    progress: loadProgress
+    progress: loadProgress,
+    equipment: loadEquipment,
 } as const;
 
-const stores = [statsStore, taskStore, inventoryStore, progressStore];
+const stores = [statsStore, taskStore, inventoryStore, progressStore, equipmentStore];
 
 export type Slice = keyof typeof loaders;
 

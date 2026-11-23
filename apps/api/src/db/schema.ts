@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import {pgTable, uuid, text, integer, bigint, doublePrecision, timestamp, primaryKey, unique, index, check,} from "drizzle-orm/pg-core";
+import {pgTable, uuid, text, integer, bigint, doublePrecision, timestamp, primaryKey, unique, index, check, foreignKey,} from "drizzle-orm/pg-core";
 
 const timestamptz = () => timestamp({ withTimezone: true });
 
@@ -330,6 +330,12 @@ export const equippedItem = pgTable(
   (t) => [
     primaryKey({ columns: [t.userId, t.slotId] }),
     index("equippedItem_equipmentId_index").on(t.equipmentId),
+    // Only a rarity the item has stats for can be equipped
+    foreignKey({
+      name: "equippedItem_equipmentStats_fk",
+      columns: [t.equipmentId, t.rarityId],
+      foreignColumns: [equipmentStats.equipmentId, equipmentStats.rarityId],
+    }).onDelete("restrict"),
   ],
 );
 

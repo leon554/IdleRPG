@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, gt, gte, inArray, sql } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { firstOrNull } from "../../db/helpers.js";
-import { equipment, equipmentCollection, inventory, rarity, resourceCollection, resources } from "../../db/schema.js";
+import { equipment, equipmentCollection, equipmentStats, inventory, rarity, resourceCollection, resources } from "../../db/schema.js";
 import type { Connection } from "../../types/db.js";
 
 export async function findUserInventoryId(userId: string, conn: Connection = db): Promise<string | null> {
@@ -82,10 +82,24 @@ export async function findResourceStacks(inventoryId: string, conn: Connection =
 
 export async function findEquipmentStacks(inventoryId: string, conn: Connection = db) {
     return conn
-        .select({ equipment, rarity, quantity: equipmentCollection.quantity })
+        .select({
+            equipment,
+            rarity,
+            quantity: equipmentCollection.quantity,
+            stats: {
+                progress: equipmentStats.progress,
+                quality: equipmentStats.quality,
+                yield: equipmentStats.yield,
+                gatheringPoints: equipmentStats.gatheringPoints,
+            },
+        })
         .from(equipmentCollection)
         .innerJoin(equipment, eq(equipment.id, equipmentCollection.equipmentId))
         .innerJoin(rarity, eq(rarity.id, equipmentCollection.rarityId))
+        .leftJoin(equipmentStats, and(
+            eq(equipmentStats.equipmentId, equipmentCollection.equipmentId),
+            eq(equipmentStats.rarityId, equipmentCollection.rarityId),
+        ))
         .where(and(eq(equipmentCollection.inventoryId, inventoryId), gt(equipmentCollection.quantity, 0)))
         .orderBy(asc(equipment.name), desc(rarity.tier));
 }

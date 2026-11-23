@@ -28,7 +28,11 @@ const MESSAGES = {
     not_enough_resources: "You don't have enough resources for that many crafts.",
     not_enough_gp_for_rotation: "This rotation costs more gathering points than you have.",
     not_enough_progress_for_task: "This rotation doesn't reach the progress requirement.",
-    not_enough_items: "You don't have that many to sell."
+    not_enough_items: "You don't have enough of that item.",
+    slot_not_found: "That gear slot doesn't exist.",
+    equipment_wrong_slot: "That item doesn't fit this slot.",
+    slot_locked_by_task: "You can't change gear in this category while a task is running.",
+    slot_empty: "Nothing is equipped in that slot."
 } as const satisfies Record<ApiErrorCode, string>;
 
 export type ErrorCode = ApiErrorCode | "network_error" | "timeout";

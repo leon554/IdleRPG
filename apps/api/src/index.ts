@@ -9,6 +9,7 @@ import { statsRouter } from './modules/stats/stats.routes.js';
 import { taskRouter } from './modules/task/task.routes.js';
 import { inventoryRouter } from './modules/inventory/inventory.routes.js';
 import { progressRouter } from './modules/progress/progress.routes.js';
+import { equipmentRouter } from './modules/equipment/equipment.routes.js';
 
 const app = express();
 
@@ -18,7 +19,7 @@ app.use(express.json());
 app.use("/api/health", healthRouter)
 app.use("/api/auth", authRouter)
 // Game data: static catalog plus the player's stats and tasks
-app.use("/api/gamedata", catalogRouter, statsRouter, taskRouter, inventoryRouter, progressRouter)
+app.use("/api/gamedata", catalogRouter, statsRouter, taskRouter, inventoryRouter, progressRouter, equipmentRouter)
 
 app.use(errorHandler)
 

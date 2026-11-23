@@ -13,19 +13,28 @@ import { Button } from '@/components/primitives/Button';
 import { useState } from 'react';
 import CraftModal from '@/components/game/craft/CraftModal';
 import { CategoryProgressCard } from '@/components/game/CategoryProgressCard';
+import { SegmentedControl } from '@/components/primitives/SegmentedControl';
+import { EquipmentTab } from '@/components/game/equipment/EquipmentTab';
 
 export default function ReipeScreen() {
     const { category } = useLocalSearchParams<{ category: string }>();
     const recipes = useStore(staticDataStore, (s) => s.recipes[category]) ?? [];
 
     const [selectedRecipe, setSelectedRecipe] = useState<null | Recipe>(null)
+    const [tab, setTab] = useState<"recipes" | "equipment">("recipes")
 
 
     return (
         <Screen className="gap-4">
             <PageHeader name={capitliseFirst(category)} onPrev={() => {router.replace("/(game)/home/crafting")}}/>
             <CategoryProgressCard categoryId={category} />
-            <FlatList
+            <SegmentedControl
+                options={[{ value: "recipes", label: "Recipes" }, { value: "equipment", label: "Equipment" }]}
+                value={tab}
+                onChange={setTab}
+            />
+            {tab === "equipment" && <EquipmentTab categoryId={category} />}
+            {tab === "recipes" && <FlatList
                 data={recipes}
                 keyExtractor={(recipe) => String(recipe.outputEquipment.name)}
                 contentContainerStyle={{ gap: 12 }}
@@ -76,6 +85,7 @@ export default function ReipeScreen() {
                     </Card>
                 )}
             />
+            }
             {selectedRecipe != null && 
                 <CraftModal 
                     openModal={true}

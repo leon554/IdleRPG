@@ -1,4 +1,4 @@
-import { getTableColumns, inArray, sql, type SQL } from "drizzle-orm";
+import { and, getTableColumns, inArray, notInArray, sql, type SQL } from "drizzle-orm";
 import type { PgTable } from "drizzle-orm/pg-core";
 import {  ACTIONS, CATEGORIES, EQUIPMENT, EQUIPMENT_TYPES,GATHERING_GROUPS, RARITIES, RECIPES, RESOURCES, SLOTS, type EquipmentStatsDef, type RarityId, type ResourceId,} from "@idlerpg/shared";
 import { db } from "./index.js";
@@ -44,6 +44,10 @@ async function seed() {
             })))
             .onConflictDoUpdate({ target: slots.id, set: updateAllExcept(slots, ["id"]) });
 
+        // Slots removed from SLOTS would otherwise linger and show up in the app.
+        // equippedItem references slots (restrict), so this fails loudly if anyone still has gear in one.
+        await tx.delete(slots).where(notInArray(slots.id, Object.keys(SLOTS)));
+
         await tx.insert(equipment)
             .values(Object.entries(EQUIPMENT).map(([id, { category, type, name, tier, levelRequirement, vendorPrice }]) => ({
                 id, categoryId: category, typeId: type, name, tier, levelRequirement, vendorPrice,
@@ -65,13 +69,21 @@ async function seed() {
             })))
             .onConflictDoUpdate({ target: recipes.id, set: updateAllExcept(recipes, ["id"]) });
 
-        await tx.delete(equipmentStats).where(inArray(equipmentStats.equipmentId, Object.keys(EQUIPMENT)));
-        const statRows = Object.entries(EQUIPMENT).flatMap(([equipmentId, def]) =>
-            (Object.entries(def.stats) as [RarityId, EquipmentStatsDef][]).map(([rarityId, stats]) => ({
-               equipmentId, rarityId, ...stats,
-            })),
-        );
-        if (statRows.length > 0) await tx.insert(equipmentStats).values(statRows);
+        // Upsert instead of delete + insert: equipped items reference these rows (equippedItem_equipmentStats_fk),
+        // so only rarities removed from game data are deleted (that fails loudly if someone has one equipped)
+        for (const [equipmentId, def] of Object.entries(EQUIPMENT)) {
+            const statRows = (Object.entries(def.stats) as [RarityId, EquipmentStatsDef][]).map(([rarityId, stats]) => ({
+                equipmentId, rarityId, ...stats,
+            }));
+            await tx.delete(equipmentStats).where(and(
+                inArray(equipmentStats.equipmentId, [equipmentId]),
+                notInArray(equipmentStats.rarityId, statRows.map((r) => r.rarityId)),
+            ));
+            if (statRows.length > 0) {
+                await tx.insert(equipmentStats).values(statRows)
+                    .onConflictDoUpdate({ target: [equipmentStats.equipmentId, equipmentStats.rarityId], set: updateAllExcept(equipmentStats, ["equipmentId", "rarityId"]) });
+            }
+        }
 
         await tx.delete(requiredResources).where(inArray(requiredResources.recipeId, Object.keys(RECIPES)));
         const inputRows = Object.entries(RECIPES).flatMap(([recipeId, def]) =>

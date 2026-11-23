@@ -26,6 +26,12 @@ export const ERROR_CODES = [
   "not_enough_gp_for_rotation",
   "not_enough_progress_for_task",
   "not_enough_items",
+
+  // equipment
+  "slot_not_found",
+  "equipment_wrong_slot",
+  "slot_locked_by_task",
+  "slot_empty",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

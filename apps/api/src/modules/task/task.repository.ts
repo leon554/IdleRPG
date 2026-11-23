@@ -1,6 +1,6 @@
 import { type Connection } from "../../types/db.js";
 import { actions, categories, equipment, equipmentStats, rarity, resources, resourceGatheringGroup, recipes, requiredResources, task, taskAction, taskRecipeInput, gatheringGroupSecondaryResources } from "../../db/schema.js";
-import { inArray, eq, asc } from "drizzle-orm";
+import { inArray, eq, asc, sql } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { firstOrNull } from "../../db/helpers.js";
 import type { RecipeInput, TaskActionEntry, TaskTarget } from "@idlerpg/shared";
@@ -68,6 +68,17 @@ export async function insertTaskActions(taskId: string, actionIds: string[], con
 export async function insertTaskRecipeInputs(taskId: string, inputs: RecipeInput[], conn: Connection = db) {
     if (inputs.length === 0) return
     await conn.insert(taskRecipeInput).values(inputs.map((input) => ({ taskId, ...input })));
+}
+
+export async function findTaskCategoryId(userId: string, conn: Connection = db): Promise<string | null> {
+    const rows = await conn
+        .select({ categoryId: sql<string | null>`coalesce(${resources.categoryId}, ${recipes.categoryId})` })
+        .from(task)
+        .leftJoin(resourceGatheringGroup, eq(resourceGatheringGroup.id, task.gatheringGroupId))
+        .leftJoin(resources, eq(resources.id, resourceGatheringGroup.mainResourceId))
+        .leftJoin(recipes, eq(recipes.id, task.recipeId))
+        .where(eq(task.userId, userId));
+    return firstOrNull(rows)?.categoryId ?? null;
 }
 
 export async function findTaskByUser(userId: string, conn: Connection = db) {

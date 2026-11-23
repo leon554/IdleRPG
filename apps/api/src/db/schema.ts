@@ -166,6 +166,7 @@ export const slots = pgTable(
     categoryId: text().notNull().references(() => categories.id, { onDelete: "restrict" }),
     equipmentTypeId: text().notNull().references(() => equipmentType.id, { onDelete: "restrict" }),
     name: text().notNull(),
+    sortOrder: integer().notNull().default(0),   // display order within the category
   },
   (t) => [
     unique("slots_category_name_unique").on(t.categoryId, t.name),
@@ -197,13 +198,18 @@ export const recipes = pgTable(
     id: text().primaryKey(),
     name: text().notNull(),
     categoryId: text().notNull().references(() => categories.id, { onDelete: "restrict" }),
-    outputEquipmentId: text().notNull().references(() => equipment.id, { onDelete: "restrict" }),
+    // A recipe makes either equipment or a resource, outputQuantity per craft
+    outputEquipmentId: text().references(() => equipment.id, { onDelete: "restrict" }),
+    outputResourceId: text().references(() => resources.id, { onDelete: "restrict" }),
+    outputQuantity: integer().notNull().default(1),
     levelRequirement: integer().notNull().default(0),
     progressRequirement: integer().notNull().default(100),
     qualityRequirement: integer().notNull().default(50),
   },
   (t) => [
     unique("recipes_name_unique").on(t.name),
+    check("recipes_output_check", sql`(${t.outputEquipmentId} IS NULL) <> (${t.outputResourceId} IS NULL)`),
+    check("recipes_outputQuantity_check", sql`${t.outputQuantity} >= 1`),
     check("recipes_levelRequirement_check", sql`${t.levelRequirement} >= 0`),
     index("recipes_categoryId_index").on(t.categoryId),
   ],

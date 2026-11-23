@@ -28,7 +28,7 @@ export async function findSlotsWithEquipped(userId: string, conn: Connection = d
             eq(equipmentStats.equipmentId, equippedItem.equipmentId),
             eq(equipmentStats.rarityId, equippedItem.rarityId),
         ))
-        .orderBy(asc(slots.categoryId), asc(slots.name));
+        .orderBy(asc(slots.categoryId), asc(slots.sortOrder));
 }
 
 export async function findEquipmentAtRarity(equipmentId: string, rarityId: string, conn: Connection = db) {

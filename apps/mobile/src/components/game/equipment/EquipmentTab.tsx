@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import type { EquippedSlot } from "@idlerpg/shared";
 import { Card } from "@/components/primitives/Card";
 import { toast } from "@/components/primitives/Toast";
@@ -26,7 +26,8 @@ export function EquipmentTab({ categoryId }: { categoryId: string }) {
     }, [status]);
 
     return (
-        <View className="gap-3">
+        // Scrolls on its own: the screen doesn't, and 9 slots don't fit on a phone
+        <ScrollView className="flex-1" contentContainerClassName="gap-3 pb-4" showsVerticalScrollIndicator={false}>
             {stats && (
                 <Card className="gap-1.5">
                     <Text className="text-textSecondary text-sm">Total stats</Text>
@@ -48,7 +49,7 @@ export function EquipmentTab({ categoryId }: { categoryId: string }) {
             )}
 
             {pickerSlot && <SlotPickerModal equippedSlot={pickerSlot} onClose={() => setPickerSlotId(null)} />}
-        </View>
+        </ScrollView>
     );
 }
 

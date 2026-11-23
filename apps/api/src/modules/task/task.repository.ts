@@ -162,6 +162,11 @@ export async function findCategoryXpRate(categoryId: string, conn: Connection = 
     return firstOrNull(rows)?.xpRate ?? 0;
 }
 
+export async function findResource(resourceId: string, conn: Connection = db) {
+    const rows = await conn.select().from(resources).where(eq(resources.id, resourceId));
+    return firstOrNull(rows)
+}
+
 export async function findEquipment(equipmentId: string, conn: Connection = db) {
     const rows = await conn.select().from(equipment).where(eq(equipment.id, equipmentId));
     return firstOrNull(rows)

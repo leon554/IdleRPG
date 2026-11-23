@@ -14,7 +14,8 @@ export async function getRecipesByCategory() {
     const output = recipeRows.map(r => ({
         ...r,
         requiredResources: requiredPerRecipe.get(r.recipe.id) ?? [],
-        stats: statsPerEquipment.get(r.recipe.outputEquipmentId) ?? []
+        // Rarities the output can roll at (equipment only; a resource output rolls any rarity)
+        stats: r.recipe.outputEquipmentId ? statsPerEquipment.get(r.recipe.outputEquipmentId) ?? [] : []
     }))
     return Object.groupBy(output, (r) => r.categoryId);
 }

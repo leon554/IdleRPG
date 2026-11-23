@@ -13,11 +13,13 @@ export async function findRecipesWithOutput(conn: Connection = db) {
             recipe: recipes,
             categoryName: categories.name,
             categoryId: categories.id,
-            outputEquipment: equipment,
+            outputEquipment: equipment,   // null unless the recipe makes equipment
+            outputResource: resources,    // null unless it makes a resource
         })
         .from(recipes)
         .innerJoin(categories, eq(recipes.categoryId, categories.id))
-        .innerJoin(equipment, eq(recipes.outputEquipmentId, equipment.id))
+        .leftJoin(equipment, eq(recipes.outputEquipmentId, equipment.id))
+        .leftJoin(resources, eq(recipes.outputResourceId, resources.id))
         .orderBy(recipes.name);
 }
 

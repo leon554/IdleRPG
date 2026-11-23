@@ -167,12 +167,9 @@ async function claimCraftTask(userId: string, task: LockedTask, tx: Connection):
     const inputs = await taskRepo.findTaskRecipeInputs(task.id, tx);
     const actions = await taskRepo.findTaskActions(task.id, tx);
     const rarities = await taskRepo.findAllRarities(tx);
-    const output = await taskRepo.findEquipment(recipe.outputEquipmentId, tx);
-    const outputRarityIds = new Set(await taskRepo.findEquipmentRarityIds(recipe.outputEquipmentId, tx));
+    const output = await findRecipeOutput(recipe, tx);
     const stats = (await getStatsPerCategory(userId))[recipe.categoryId];
     const xpRate = await taskRepo.findCategoryXpRate(recipe.categoryId, tx);
-
-    if (!output) throw notFound("recipe_not_found");
 
     const rotation = calculateRotation(actions, stats);
     const succeeded = rotation.progress >= recipe.progressRequirement;
@@ -202,7 +199,7 @@ async function claimCraftTask(userId: string, task: LockedTask, tx: Connection):
         tier: rarityById.get(inputRarityByResource.get(r.resourceId) ?? "")?.tier ?? 1,
     }));
     const qualityRatio = recipe.qualityRequirement > 0 ? rotation.quality / recipe.qualityRequirement : 0;
-    const craftable = rarities.filter((r) => outputRarityIds.has(r.id));
+    const craftable = output.rarityIds ? rarities.filter((r) => output.rarityIds!.has(r.id)) : rarities;
     const boostedRarities = Object.values(applyRarityMultiplier(
         Object.fromEntries((craftable.length > 0 ? craftable : rarities).map((r) => [r.id, r])),
         craftRarityMultiplier(qualityRatio, inputTiers),
@@ -214,12 +211,19 @@ async function claimCraftTask(userId: string, task: LockedTask, tx: Connection):
         craftedByRarity.set(rarityId, (craftedByRarity.get(rarityId) ?? 0) + 1);
     }
 
-    const stacks = [...craftedByRarity].map(([rarityId, amount]) => ({ equipmentId: output.id, rarityId, amount }));
-    await inventoryService.addEquipment(userId, stacks, tx);
+    // Each craft makes outputQuantity items at the rarity it rolled
+    const made = [...craftedByRarity].map(([rarityId, craftCount]) => ({
+        rarityId, craftCount, amount: craftCount * recipe.outputQuantity,
+    }));
+    if (output.type === "equipment") {
+        await inventoryService.addEquipment(userId, made.map(({ rarityId, amount }) => ({ equipmentId: output.item.id, rarityId, amount })), tx);
+    } else {
+        await inventoryService.addResources(userId, made.map(({ rarityId, amount }) => ({ resourceId: output.item.id, rarityId, amount })), tx);
+    }
 
-    // One craft per cycle, so XP per crafted item: the output's tier and the rarity it rolled
-    const xpEarned = stacks.reduce((sum, { rarityId, amount }) =>
-        sum + calculateXp(xpRate, output.tier, rarityById.get(rarityId)!.tier, amount), 0);
+    // XP per craft (one per cycle), not per item made: the output's tier and the rarity it rolled
+    const xpEarned = made.reduce((sum, { rarityId, craftCount }) =>
+        sum + calculateXp(xpRate, output.item.tier, rarityById.get(rarityId)!.tier, craftCount), 0);
     await progressService.addXp(userId, recipe.categoryId, xpEarned, tx);
 
     const completedCount = task.completedCount + crafts;
@@ -228,14 +232,28 @@ async function claimCraftTask(userId: string, task: LockedTask, tx: Connection):
     if (taskEnded) await taskRepo.deleteTaskByUser(userId, tx);
     else await taskRepo.updateTaskAfterClaim(task.id, claimedUntil, completedCount, tx);
 
-    const items: ClaimedItem[] = stacks.map(({ rarityId, amount }) => ({
-        type: "equipment",
-        equipment: output,
-        rarity: rarityById.get(rarityId)!,
-        amount,
-    }));
+    const items: ClaimedItem[] = made.map(({ rarityId, amount }) => output.type === "equipment"
+        ? { type: "equipment", equipment: output.item, rarity: rarityById.get(rarityId)!, amount }
+        : { type: "resource", resource: output.item, rarity: rarityById.get(rarityId)!, amount });
 
     return { cyclesClaimed: cycles, successfulCycles: crafts, items, nextCycleAt, taskEnded, xp: xpEarned};
+}
+
+type Recipe = NonNullable<Awaited<ReturnType<typeof taskRepo.findRecipe>>>;
+
+// What a recipe makes. `rarityIds` limits the rarities it can roll (equipment: those it has stats for);
+// null = any rarity (resources)
+async function findRecipeOutput(recipe: Recipe, tx: Connection) {
+    if (recipe.outputEquipmentId !== null) {
+        const item = await taskRepo.findEquipment(recipe.outputEquipmentId, tx);
+        if (!item) throw notFound("recipe_not_found");
+        const rarityIds = new Set(await taskRepo.findEquipmentRarityIds(recipe.outputEquipmentId, tx));
+        return { type: "equipment" as const, item, rarityIds: rarityIds.size > 0 ? rarityIds : null };
+    }
+
+    const item = recipe.outputResourceId ? await taskRepo.findResource(recipe.outputResourceId, tx) : null;
+    if (!item) throw notFound("recipe_not_found");
+    return { type: "resource" as const, item, rarityIds: null };
 }
 
 export async function stopTask(userId: string): Promise<ClaimResult | null> {

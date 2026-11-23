@@ -39,14 +39,11 @@ async function seed() {
           .onConflictDoUpdate({ target: resources.id, set: updateAllExcept(resources, ["id"]) });
 
         await tx.insert(slots)
-            .values(Object.entries(SLOTS).map(([id, { category, equipmentType: type, name }]) => ({
-               id, categoryId: category, equipmentTypeId: type, name,
+            .values(Object.entries(SLOTS).map(([id, { category, equipmentType: type, name, sortOrder }]) => ({
+               id, categoryId: category, equipmentTypeId: type, name, sortOrder,
             })))
             .onConflictDoUpdate({ target: slots.id, set: updateAllExcept(slots, ["id"]) });
 
-        // Slots removed from SLOTS would otherwise linger and show up in the app.
-        // equippedItem references slots (restrict), so this fails loudly if anyone still has gear in one.
-        await tx.delete(slots).where(notInArray(slots.id, Object.keys(SLOTS)));
 
         await tx.insert(equipment)
             .values(Object.entries(EQUIPMENT).map(([id, { category, type, name, tier, levelRequirement, vendorPrice }]) => ({
@@ -64,8 +61,11 @@ async function seed() {
             });
 
         await tx.insert(recipes)
-            .values(Object.entries(RECIPES).map(([id, { name, category, output, levelRequirement, progressRequirement, qualityRequirement }]) => ({
-                id, name, categoryId: category, outputEquipmentId: output, levelRequirement, progressRequirement, qualityRequirement,
+            .values(Object.entries(RECIPES).map(([id, { name, category, output, outputQuantity, levelRequirement, progressRequirement, qualityRequirement }]) => ({
+                id, name, categoryId: category,
+                outputEquipmentId: "equipment" in output ? output.equipment : null,
+                outputResourceId: "resource" in output ? output.resource : null,
+                outputQuantity, levelRequirement, progressRequirement, qualityRequirement,
             })))
             .onConflictDoUpdate({ target: recipes.id, set: updateAllExcept(recipes, ["id"]) });
 
@@ -101,6 +101,17 @@ async function seed() {
             })),
         );
         if (dropRows.length > 0) await tx.insert(gatheringGroupSecondaryResources).values(dropRows);
+
+        // Remove whatever was taken out of game data, so it doesn't linger in the app.
+        // Children first. Anything players still hold, equip or run a task on is referenced with `restrict`,
+        // so the seed fails loudly instead of deleting player data (write a data migration for that).
+        await tx.delete(recipes).where(notInArray(recipes.id, Object.keys(RECIPES)));
+        await tx.delete(resourceGatheringGroup).where(notInArray(resourceGatheringGroup.id, Object.keys(GATHERING_GROUPS)));
+        await tx.delete(slots).where(notInArray(slots.id, Object.keys(SLOTS)));
+        await tx.delete(equipment).where(notInArray(equipment.id, Object.keys(EQUIPMENT)));
+        await tx.delete(resources).where(notInArray(resources.id, Object.keys(RESOURCES)));
+        await tx.delete(equipmentType).where(notInArray(equipmentType.id, Object.keys(EQUIPMENT_TYPES)));
+        await tx.delete(categories).where(notInArray(categories.id, Object.keys(CATEGORIES)));
     });
 }
 

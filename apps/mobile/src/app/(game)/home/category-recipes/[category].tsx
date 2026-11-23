@@ -36,13 +36,16 @@ export default function ReipeScreen() {
             {tab === "equipment" && <EquipmentTab categoryId={category} />}
             {tab === "recipes" && <FlatList
                 data={recipes}
-                keyExtractor={(recipe) => String(recipe.outputEquipment.name)}
+                keyExtractor={(recipe) => recipe.recipe.id}
                 contentContainerStyle={{ gap: 12 }}
                 renderItem={({ item }) => (
                     <Card className='gap-2'>
                         <View className='gap-2'>
                             <View className='flex-col'>
-                                <Text className="text-textPrimary text-lg font-medium">{item.outputEquipment.name}</Text>
+                                <Text className="text-textPrimary text-lg font-medium">
+                                    {item.recipe.name}
+                                    {item.recipe.outputQuantity > 1 && <Text className="text-textMuted text-sm"> ×{item.recipe.outputQuantity}</Text>}
+                                </Text>
                                 <FlatList
                                     horizontal
                                     data={item.stats}

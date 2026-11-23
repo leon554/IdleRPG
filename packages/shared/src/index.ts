@@ -97,7 +97,8 @@ export type Recipe = {
     recipe: RecipeInfo,
     categoryName: string,
     categoryId: string,
-    outputEquipment: Equipment,
+    outputEquipment: Equipment | null,   // set when the recipe makes equipment
+    outputResource: Resource | null,     // set when it makes a resource (bars, coal, planks)
     requiredResources: {
         resourceId: string,
         name: string,
@@ -136,7 +137,9 @@ export type RecipeInfo = {
     id: string;
     name: string;
     categoryId: string;
-    outputEquipmentId: string;
+    outputEquipmentId: string | null;   // exactly one of outputEquipmentId / outputResourceId is set
+    outputResourceId: string | null;
+    outputQuantity: number;             // items made per craft
     levelRequirement: number;
     progressRequirement: number;
     qualityRequirement: number;

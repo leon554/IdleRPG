@@ -20,7 +20,7 @@ export async function findRecipesWithOutput(conn: Connection = db) {
         .innerJoin(categories, eq(recipes.categoryId, categories.id))
         .leftJoin(equipment, eq(recipes.outputEquipmentId, equipment.id))
         .leftJoin(resources, eq(recipes.outputResourceId, resources.id))
-        .orderBy(recipes.name);
+        .orderBy(recipes.levelRequirement);
 }
 
 export async function findAllEquipmentStats(conn: Connection = db) {

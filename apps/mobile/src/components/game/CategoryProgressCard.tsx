@@ -15,15 +15,13 @@ export function CategoryProgressCard({ categoryId }: { categoryId: string }) {
 
     return (
         <Card className="gap-2">
-            <View className="flex-row justify-between items-center">
-                <Text className="text-textPrimary font-semibold">Level {progress.level}</Text>
-                <Text className="text-textMuted text-xs">{GameDataUtil.formatCompactNumber(progress.xp)} XP</Text>
-            </View>
             <ProgressBar
                 value={maxed ? 1 : progress.xp - levelStartXp}
                 max={maxed ? 1 : nextLevelXp - levelStartXp}
                 size="sm"
-                label={maxed ? "Max level" : `Next level In: ${GameDataUtil.formatCompactNumber(nextLevelXp - progress.xp)} XP`}
+                showValue
+                label={maxed ? "Max level" : `Lv ${progress.level}`}
+                formatValue={(v, m) => `${GameDataUtil.formatCompactNumber(progress.xp)} / ${GameDataUtil.formatCompactNumber(nextLevelXp)} XP`}
             />
         </Card>
     );

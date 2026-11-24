@@ -54,7 +54,7 @@ export function SlotPickerModal({ equippedSlot, onClose }: { equippedSlot: Equip
             <Text className="text-textPrimary text-lg font-medium">{slot.name}</Text>
 
             {equipped && (
-                <Card className="gap-1.5">
+                <Card className="bg-surfaceRaised">
                     <Text className="text-textMuted text-xs">Equipped</Text>
                     <View className="flex-row items-center justify-between">
                         <View className="flex-row items-center gap-1.5 flex-1">
@@ -82,7 +82,7 @@ export function SlotPickerModal({ equippedSlot, onClose }: { equippedSlot: Equip
                     {candidates.map(({ stack, blockedReason }) => (
                         <Card
                             key={`${stack.equipment.id}:${stack.rarity.id}`}
-                            className={`gap-1 p-3 ${blockedReason ? "opacity-50" : ""}`}
+                            className={`gap-1 p-3 bg-surfaceRaised ${blockedReason ? "opacity-50" : ""}`}
                             onPress={blockedReason || pending ? undefined
                                 : () => run(() => equipItem(slot.id, stack), `Equipped ${stack.equipment.name}`)}
                         >

@@ -22,8 +22,11 @@ export function StatList({ stats, compareTo }: { stats: CategoryStats; compareTo
                 const value = diff ? diff[key] : stats[key];
                 const color = !diff ? "text-textSecondary" : value > 0 ? "text-success" : "text-danger";
                 return (
-                    <Text key={key} className={`text-xs ${color}`}>
-                        {STAT_LABELS[key]} {diff && value > 0 ? "+" : ""}{GameDataUtil.roundToSignificant(value, 3)}
+                    <Text key={key} className={`text-xs text-textMuted`}>
+                        {STAT_LABELS[key]} {diff && value > 0 ? "+" : ""} 
+                        <Text className={`font-bold ${color}`}>
+                            {GameDataUtil.roundToSignificant(value, 3)}
+                        </Text>
                     </Text>
                 );
             })}

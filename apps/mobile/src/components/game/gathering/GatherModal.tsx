@@ -1,17 +1,17 @@
 import { View, Text, FlatList, ScrollView } from 'react-native'
 import { useEffect, useState } from 'react'
-import { Modal } from '../primitives/Modal'
-import { Card } from '../primitives/Card'
+import { Modal } from '@/components/primitives/Modal'
+import { Card } from '@/components/primitives/Card'
 import { useStore } from '@/lib/store'
 import { staticDataStore } from '@/stores/staticData'
 import { statsStore } from '@/stores/stats'
 import { startGatherTask, taskStore } from '@/stores/task'
 import { errorMessage } from '@/lib/api-service-layer/errors'
-import { ProgressBar } from '../primitives/ProgressBar'
+import { ProgressBar } from '@/components/primitives/ProgressBar'
 import { Action, GatheringGroup} from '@idlerpg/shared'
 import { RARITIES, CALCULATE_RARITIES_ODDS_SUM } from '@idlerpg/shared/src/gameData'
-import { Button } from '../primitives/Button'
-import { toast } from '../primitives/Toast'
+import { Button } from '@/components/primitives/Button'
+import { toast } from '@/components/primitives/Toast'
 import { GameDataUtil } from '@/util/game-data-util'
 
 interface Props{
@@ -84,47 +84,54 @@ export default function GatherModal({openModal, setOpenModal, categoryId, select
     
 
     return (
-        <Modal visible={openModal} onClose={() => setOpenModal(false)} className='gap-3'>
-            <Text className="text-textPrimary text-lg font-medium">Actions</Text>
-            <Card className='gap-2'>
-                <ProgressBar 
-                    value={progress.progress} 
-                    max={selectedGatheringGroup.mainResource.progressRequirement} 
-                    showValue 
-                    label='Progress'
-                    size="sm"
-                    variant={progress.progress >= selectedGatheringGroup.mainResource.progressRequirement ? "success" : "primary"}
-                    formatValue={(v, m) => `${v} / ${m}`}
-                />
-                <ProgressBar 
-                    value={progress.quality} 
-                    max={selectedGatheringGroup.mainResource.qualityRequirement} 
-                    showValue 
-                    label='Quality'
-                    size="sm"
-                    variant={progress.quality >= selectedGatheringGroup.mainResource.qualityRequirement ? "success" : "primary"}
-                    formatValue={(v, m) => `${v} / ${m}`}
-                />
-                <ProgressBar 
-                    value={progress.yield} 
-                    max={selectedGatheringGroup.mainResource.yieldRequirement} 
-                    showValue 
-                    label={`Yield ${calculateYieldMultiplie()}x`}
-                    size="sm"
-                    variant={progress.yield >= selectedGatheringGroup.mainResource.yieldRequirement ? "success" : "primary"}
-                    formatValue={(v, m) => `${v} / ${m}`}
-                />
-                <ProgressBar 
-                    value={(stats?.gatheringPoints ?? 0) - usedGP} 
-                    max={stats?.gatheringPoints ?? 0} 
-                    showValue 
-                    label='Gathering Points'
-                    size="sm"
-                    formatValue={(v, m) => `${v} / ${m} GP`}
-                />
-            </Card>
-            <View className='gap-1'>
-                <Text className="text-textSecondary text-sm">Odds</Text>
+        <Modal visible={openModal} onClose={() => setOpenModal(false)} className='gap-2'>
+            <Text className="text-textPrimary text-lg font-medium">Gather</Text>
+            <View className='gap-3'>
+                <View className='flex-row w-full gap-4'>
+                    <ProgressBar 
+                        value={progress.progress} 
+                        max={selectedGatheringGroup.mainResource.progressRequirement} 
+                        showValue 
+                        label='Progress'
+                        size="sm"
+                        variant={progress.progress >= selectedGatheringGroup.mainResource.progressRequirement ? "success" : "primary"}
+                        formatValue={(v, m) => `${v} / ${m}`}
+                        className='w-[48%]'
+                    />
+                    <ProgressBar 
+                        value={progress.quality} 
+                        max={selectedGatheringGroup.mainResource.qualityRequirement} 
+                        showValue 
+                        label='Quality'
+                        size="sm"
+                        variant={progress.quality >= selectedGatheringGroup.mainResource.qualityRequirement ? "success" : "primary"}
+                        formatValue={(v, m) => `${v} / ${m}`}
+                        className='w-[48%]'
+                    />
+                </View>
+                <View className='flex-row w-full gap-4'>
+                    <ProgressBar 
+                        value={progress.yield} 
+                        max={selectedGatheringGroup.mainResource.yieldRequirement} 
+                        showValue 
+                        label={`Yield ${calculateYieldMultiplie()}x`}
+                        size="sm"
+                        variant={progress.yield >= selectedGatheringGroup.mainResource.yieldRequirement ? "success" : "primary"}
+                        formatValue={(v, m) => `${v} / ${m}`}
+                        className='w-[48%]'
+                    />
+                    <ProgressBar 
+                        value={(stats?.gatheringPoints ?? 0) - usedGP} 
+                        max={stats?.gatheringPoints ?? 0} 
+                        showValue 
+                        label='Gathering Points'
+                        size="sm"
+                        formatValue={(v, m) => `${v} / ${m} GP`}
+                        className='w-[48%]'
+                    />
+                </View>
+            </View>
+            <View className='gap-1 mt-2'>
                 <ScrollView
                     className="max-h-20"
                     contentContainerClassName="flex-row flex-wrap gap-2 justify-between"
@@ -144,20 +151,21 @@ export default function GatherModal({openModal, setOpenModal, categoryId, select
                 </ScrollView> 
             </View>
             <View className='gap-1'>
-                <Text className="text-textSecondary text-sm">Actions</Text>
+                <Text className="text-textPrimary text-sm font-semibold mt-5">Actions</Text>
                 <FlatList
                     data={actions}
                     keyExtractor={(action) => action.id}
                     ItemSeparatorComponent={() => <View className="h-2" />}
                     renderItem={({ item }) => (
-                        <Card className="gap-0.5 flex-row items-center justify-between p-1 px-2 rounded-md"
+                        <Card 
+                            className="p-1 gap-0.5 flex-row items-center justify-between px-2 rounded-md border bg-surfaceRaised border-border"
                             onPress={() => useAction(item)}
-                            variant="default"
+                            variant="none"
                         >
-                            <View>
-                                <Text className="text-textSecondary text-sm">{item.name}</Text>
+                            <View className='gap-0.5'>
+                                <Text className="text-textSecondary text-xs font-bold">{item.name}</Text>
                                 <Text className="text-textMuted text-xs">
-                                    Yield {item.yieldMultiplier * stats.yield}, Quality {item.qualityMultiplier * stats.quality}, Progress: {item.progressMultiplier * stats.progress}
+                                    Y {item.yieldMultiplier * stats.yield}, Q {item.qualityMultiplier * stats.quality}, P: {item.progressMultiplier * stats.progress}
                                 </Text>
                             </View>
                             <Text className="text-primary">GP: {item.gatheringPointCost}</Text>
@@ -166,7 +174,7 @@ export default function GatherModal({openModal, setOpenModal, categoryId, select
                 />
             </View>
             <View className='gap-1'>
-                <Text className="text-textSecondary text-sm">Rotation</Text>
+                <Text className="text-textPrimary text-sm font-semibold mt-5">Rotation</Text>
                 {usedActions.length != 0 ?
                     <ScrollView
                         className="max-h-20"
@@ -186,7 +194,7 @@ export default function GatherModal({openModal, setOpenModal, categoryId, select
                     <Text className="text-textMuted text-xs">Select an action...</Text>
                 }
             </View>
-            <View className='flex-row gap-3'>
+            <View className='flex-row gap-3 mt-5'>
                 <Button
                     title='Reset'
                     size='sm'

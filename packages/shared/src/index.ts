@@ -65,7 +65,7 @@ export type GatheringGroup = {
         yieldRequirement: number;
         vendorPrice: number;
     },
-    levelRequirment: number,
+    levelRequirement: number,
     category: string,
     categoryId: string,
     secondaryResources: {

@@ -302,7 +302,6 @@ export const SLOT_LAYOUT = [
   { key: "hands",     name: "Hands",       type: "hands" },
   { key: "feet",      name: "Feet",        type: "feet" },
   { key: "jewelry_1", name: "Jewelry 1",   type: "jewelry" },
-  { key: "jewelry_2", name: "Jewelry 2",   type: "jewelry" },
 ] as const;
 
 export type SlotId = `${CategoryId}_${(typeof SLOT_LAYOUT)[number]["key"]}`;   // e.g. "mining_main_hand"

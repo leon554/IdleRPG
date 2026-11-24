@@ -26,24 +26,26 @@ export function EquipmentTab({ categoryId }: { categoryId: string }) {
     }, [status]);
 
     return (
-        // Scrolls on its own: the screen doesn't, and 9 slots don't fit on a phone
         <ScrollView className="flex-1" contentContainerClassName="gap-3 pb-4" showsVerticalScrollIndicator={false}>
             {stats && (
                 <Card className="gap-1.5">
-                    <Text className="text-textSecondary text-sm">Total stats</Text>
+                    <Text className="text-textPrimary font-medium text-sm">Total stats</Text>
                     <StatList stats={stats} />
                 </Card>
             )}
 
-            {locked && (
-                <Card className="border-warning">
-                    <Text className="text-textSecondary text-xs">Gear is locked while a task in this category is running.</Text>
-                </Card>
-            )}
+           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 9 }}>
+                {slots.map((slot) => (
+                    <View key={slot.slot.id} style={{ width: "49%" }}>
+                        <SlotRow
+                            slot={slot}
+                            disabled={locked}
+                            onPress={() => locked ? toast.warning("Can't change equipment while task is running",  {duration: 800}) : setPickerSlotId(slot.slot.id)}
+                        />
+                    </View>
+                ))}
+            </View>
 
-            {slots.map((slot) => (
-                <SlotRow key={slot.slot.id} slot={slot} disabled={locked} onPress={() => setPickerSlotId(slot.slot.id)} />
-            ))}
             {status === "ready" && slots.length === 0 && (
                 <Text className="text-textMuted text-xs text-center">This category has no gear slots.</Text>
             )}
@@ -56,19 +58,17 @@ export function EquipmentTab({ categoryId }: { categoryId: string }) {
 function SlotRow({ slot, disabled, onPress }: { slot: EquippedSlot; disabled: boolean; onPress: () => void }) {
     const { equipped } = slot;
     return (
-        <Card className={`gap-1.5 ${disabled ? "opacity-60" : ""}`} onPress={disabled ? undefined : onPress}>
+        <Card className={`gap-1.5 h-20 ${disabled ? "opacity-60" : ""}`} onPress={onPress}>
             <View className="flex-row justify-between items-center">
                 <Text className="text-textMuted text-xs">{slot.slot.name}</Text>
-                {!disabled && <Text className="text-primary text-xs">{equipped ? "Change" : "Equip"}</Text>}
             </View>
             {equipped ? (
                 <>
-                    <View className="flex-row items-center gap-1.5">
-                        <View className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: equipped.rarity.color }} />
-                        <Text className="text-textPrimary font-medium">{equipped.equipment.name}</Text>
-                        <Text className="text-textMuted text-xs">{equipped.rarity.name}</Text>
+                    <View className="flex-row items-center gap-1.5 p-0.5 w-fit px-1.5 rounded-md" 
+                        style={{backgroundColor: equipped.rarity.color}}
+                    >
+                        <Text className="font-medium text-onPrimary">{equipped.equipment.name}</Text>
                     </View>
-                    <StatList stats={equipped.stats} />
                 </>
             ) : (
                 <Text className="text-textSecondary">Empty</Text>

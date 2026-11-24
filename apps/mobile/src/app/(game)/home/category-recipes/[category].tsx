@@ -15,6 +15,7 @@ import CraftModal from '@/components/game/craft/CraftModal';
 import { CategoryProgressCard } from '@/components/game/CategoryProgressCard';
 import { SegmentedControl } from '@/components/primitives/SegmentedControl';
 import { EquipmentTab } from '@/components/game/equipment/EquipmentTab';
+import RecipeCard from '@/components/game/craft/RecipeCard';
 
 export default function ReipeScreen() {
     const { category } = useLocalSearchParams<{ category: string }>();
@@ -38,54 +39,9 @@ export default function ReipeScreen() {
                 data={recipes}
                 keyExtractor={(recipe) => recipe.recipe.id}
                 contentContainerStyle={{ gap: 12 }}
+                showsVerticalScrollIndicator={false}
                 renderItem={({ item }) => (
-                    <Card className='gap-2'>
-                        <View className='gap-2'>
-                            <View className='flex-col'>
-                                <Text className="text-textPrimary text-lg font-medium">
-                                    {item.recipe.name}
-                                    {item.recipe.outputQuantity > 1 && <Text className="text-textMuted text-sm"> ×{item.recipe.outputQuantity}</Text>}
-                                </Text>
-                                <FlatList
-                                    horizontal
-                                    data={item.stats}
-                                    keyExtractor={(item) => String(item.rarityId)}
-                                    contentContainerStyle={{ gap: 4 }}
-                                    renderItem={({ item }) => (
-                                        <View 
-                                            className={`flex-row gap-0.5 w-2 h-2 rounded-full`} 
-                                            style={{backgroundColor: rarityColors[item.rarityId as keyof typeof rarityColors]}}>
-                                        </View>
-                                    )}
-                                />
-                            </View>
-                            <View className='flex-row gap-2'>
-                                <Text className="text-xs bg-primary w-fit text-onPrimary px-2 rounded-md mt-0.5">
-                                    Lvl Required: {item.recipe.levelRequirement}
-                                </Text>
-                            </View>
-                        </View>
-                        <View>
-                            <FlatList
-                                horizontal
-                                data={item.requiredResources}
-                                keyExtractor={(item) => String(item.resourceId)}
-                                contentContainerStyle={{ gap: 10 }}
-                                renderItem={({ item }) => (
-                                    <View className=''>
-                                        <Text className="text-xs w-fit text-textMuted rounded-md">
-                                            {item.name} x{item.amount}
-                                        </Text>
-                                    </View>
-                                )}
-                            />
-                        </View>
-                        <Button
-                            title='Craft'
-                            size='sm'
-                            onPress={() => setSelectedRecipe(item)}
-                        />
-                    </Card>
+                    <RecipeCard recipe={item} setSelectedRecipe={setSelectedRecipe}/>
                 )}
             />
             }

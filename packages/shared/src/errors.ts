@@ -26,6 +26,7 @@ export const ERROR_CODES = [
   "not_enough_gp_for_rotation",
   "not_enough_progress_for_task",
   "not_enough_items",
+  "inventory_full",
 
   // equipment
   "slot_not_found",

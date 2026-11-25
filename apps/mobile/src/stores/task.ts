@@ -35,6 +35,8 @@ const startTask = async (path: string, body: object) => {
         await refresh("task", "inventory", "progress"); // replacing a task pays out the old one (items and XP)
     } catch (error) {
         if (isApiError(error, "task_already_active")) await loadActiveTask().catch(() => {});
+        // Refused for a full inventory: the running task may still have been paid out (and stopped if it overflowed)
+        if (isApiError(error, "inventory_full")) await refresh("task", "inventory", "progress").catch(() => {});
         throw error; 
     } finally {
         taskStore.setState({ starting: false });

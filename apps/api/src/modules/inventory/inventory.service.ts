@@ -1,10 +1,11 @@
 import { db } from "../../db/index.js";
-import { badRequest, notFound } from "../../shared/errors.js";
+import { badRequest, conflict, notFound } from "../../shared/errors.js";
 import type { Connection } from "../../types/db.js";
 import * as inventoryRepo from "./inventory.repository.js";
 import { unitSellPrice, type Inventory, type SellRequest, type SellResult } from "@idlerpg/shared";
 import type { OwnedResource } from "./inventory.types.js";
 import { DEFAULT_INVENTORY_MAX_SPACE } from "./inventory.constants.js";
+import { Util } from "../../util/generalUtil/util.js";
 
 
 export async function getUserInventoryId(userId: string, conn: Connection = db): Promise<string> {
@@ -67,6 +68,20 @@ export async function takeResources(
     }
 }
 
+export async function getSpace(userId: string, conn: Connection = db): Promise<{ used: number; max: number }> {
+    const inv = await inventoryRepo.findInventoryByUser(userId, conn);
+    if (!inv) return { used: 0, max: DEFAULT_INVENTORY_MAX_SPACE };
+    return { used: await inventoryRepo.countDistinctItems(inv.id, conn), max: inv.maxSpace };
+}
+
+export async function assertRoomFor(userId: string, itemType: "resource" | "equipment", itemId: string, conn: Connection = db) {
+    const inventoryId = await getOrCreateInventoryId(userId, conn);
+    if (await inventoryRepo.holdsItem(inventoryId, itemType, itemId, conn)) return;
+
+    const { used, max } = await getSpace(userId, conn);
+    if (used >= max) throw conflict("inventory_full", { used, max });
+}
+
 export async function getInventory(userId: string): Promise<Inventory> {
     const inv = await inventoryRepo.findInventoryByUser(userId);
     if (!inv) {
@@ -78,10 +93,14 @@ export async function getInventory(userId: string): Promise<Inventory> {
         inventoryRepo.findEquipmentStacks(inv.id),
     ]);
 
+    const size = new Set<string>()
+    resourceRows.forEach(r => size.add(r.resource.id))
+    equipmentRows.forEach(e => size.add(e.equipment.id))
+
     return {
         gold: inv.gold,
         maxSpace: inv.maxSpace,
-        usedSpace: resourceRows.length + equipmentRows.length,
+        usedSpace: size.size,
         resources: resourceRows.map((r) => ({ type: "resource", ...r })),
         equipment: equipmentRows.map((e) => ({ type: "equipment", ...e })),
     };

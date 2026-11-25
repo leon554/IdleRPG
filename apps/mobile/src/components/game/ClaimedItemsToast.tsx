@@ -5,7 +5,7 @@ import { GameDataUtil } from "@/util/game-data-util";
 const itemName = (i: ClaimedItem) => (i.type === "equipment" ? i.equipment.name : i.resource.itemName);
 const itemId = (i: ClaimedItem) => (i.type === "equipment" ? i.equipment.id : i.resource.id);
 
-export function ClaimedItemsToast({ items, xp}: { items: ClaimedItem[]; xp: number }) {
+export function ClaimedItemsToast({ items, xp, overCapacity = false }: { items: ClaimedItem[]; xp: number; overCapacity?: boolean }) {
     const sorted = [...items].sort((a, b) => b.rarity.tier - a.rarity.tier || itemName(a).localeCompare(itemName(b)));
 
     return (
@@ -31,6 +31,9 @@ export function ClaimedItemsToast({ items, xp}: { items: ClaimedItem[]; xp: numb
                     </View>
                 ))}
             </View>
+            {overCapacity && (
+                <Text className="text-xs text-warning">Inventory over capacity: task stopped. Sell items to start another.</Text>
+            )}
         </View>
     );
 }

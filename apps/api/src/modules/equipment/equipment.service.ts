@@ -36,8 +36,12 @@ export async function equip(userId: string, { slotId, equipmentId, rarityId }: E
 
         await inventoryService.takeEquipment(userId, equipmentId, rarityId, 1, tx);
 
+        // The swapped-out item goes back to the inventory: checked after taking the new one, which may have freed a space
         const previous = await equipmentRepo.findEquippedForUpdate(userId, slotId, tx);
-        if (previous) await inventoryService.addEquipment(userId, [{ ...previous, amount: 1 }], tx);
+        if (previous) {
+            await inventoryService.assertRoomFor(userId, "equipment", previous.equipmentId, tx);
+            await inventoryService.addEquipment(userId, [{ ...previous, amount: 1 }], tx);
+        }
 
         await equipmentRepo.upsertEquipped(userId, slotId, equipmentId, rarityId, tx);
         return getEquipment(userId, tx);
@@ -52,6 +56,7 @@ export async function unequip(userId: string, { slotId }: UnequipRequest): Promi
         const removed = await equipmentRepo.deleteEquipped(userId, slotId, tx);
         if (!removed) throw badRequest("slot_empty", { slotId });
 
+        await inventoryService.assertRoomFor(userId, "equipment", removed.equipmentId, tx);
         await inventoryService.addEquipment(userId, [{ ...removed, amount: 1 }], tx);
         return getEquipment(userId, tx);
     });

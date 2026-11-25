@@ -8,17 +8,18 @@ import { Button } from '@/components/primitives/Button'
 import { toast } from '@/components/primitives/Toast'
 import { useStore } from '@/lib/store'
 import { errorMessage } from '@/lib/api-service-layer/errors'
-import { inventoryStore, loadInventory } from '@/stores/inventory'
+import { inventoryStore, loadInventory, selectInventoryFull } from '@/stores/inventory'
 import { colors } from '@/theme'
 import { InventoryRow } from '@/components/game/inventory/InvetoryRow'
 import { GameDataUtil } from '@/util/game-data-util'
 
-const stackKey = (s: InventoryStack) =>
-    `${s.type}:${s.type === 'resource' ? s.resource.id : s.equipment.id}:${s.rarity.id}`
+const stackKey = (s: InventoryStack[]) =>
+    `${s[0].type}:${s[0].type === 'resource' ? s[0].resource.id : s[0].equipment.id}`
 
 export default function InventoryScreen() {
     const inventory = useStore(inventoryStore, (s) => s.inventory)
     const status = useStore(inventoryStore, (s) => s.status)
+    const full = useStore(inventoryStore, selectInventoryFull)
     const [refreshing, setRefreshing] = useState(false)
 
     const onRefresh = async () => {
@@ -48,7 +49,7 @@ export default function InventoryScreen() {
         )
     }
 
-    const stacks: InventoryStack[] = [...inventory.resources, ...inventory.equipment]
+    const stacks = GameDataUtil.groupItemStacksByItemId([...inventory.resources, ...inventory.equipment])
 
     return (
         <Screen className="gap-3">
@@ -56,13 +57,11 @@ export default function InventoryScreen() {
 
             <Card className="flex-row justify-between items-center">
                 <View>
-                    <Text className="text-textMuted text-xs">Gold</Text>
-                    <Text className="text-textPrimary text-lg font-semibold">{GameDataUtil.formatCompactNumber(inventory.gold)}</Text>
+                    <Text className="text-textMuted text-xs font-medium">Gold {GameDataUtil.formatCompactNumber(inventory.gold)}</Text>
                 </View>
                 <View className="items-end">
-                    <Text className="text-textMuted text-xs">Space</Text>
-                    <Text className="text-textPrimary text-lg font-semibold">
-                        {inventory.usedSpace} / {inventory.maxSpace}
+                    <Text className={`text-xs font-medium ${full ? "text-danger" : "text-textMuted"}`}>
+                        Space {inventory.usedSpace} / {inventory.maxSpace}{full ? " · Full" : ""}
                     </Text>
                 </View>
             </Card>
@@ -71,7 +70,7 @@ export default function InventoryScreen() {
                 data={stacks}
                 showsVerticalScrollIndicator={false}
                 keyExtractor={stackKey}
-                renderItem={({ item, index }) => <InventoryRow stack={item} isLast={index === stacks.length - 1} />}
+                renderItem={({ item, index }) => <InventoryRow stacks={item} isLast={index === stacks.length - 1} />}
                 className="grow-0 rounded-md border border-border bg-surface"
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
                 ListEmptyComponent={

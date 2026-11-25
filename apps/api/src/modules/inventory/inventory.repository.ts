@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, gte, inArray, sql } from "drizzle-orm";
+import { and, asc, countDistinct, desc, eq, gt, gte, inArray, sql } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { firstOrNull } from "../../db/helpers.js";
 import { equipment, equipmentCollection, equipmentStats, inventory, rarity, resourceCollection, resources } from "../../db/schema.js";
@@ -60,6 +60,27 @@ export async function addToEquipmentStacks(inventoryId: string, stacks: { equipm
             target: [equipmentCollection.inventoryId, equipmentCollection.equipmentId, equipmentCollection.rarityId],
             set: { quantity: sql`${equipmentCollection.quantity} + excluded.quantity` },
         });
+}
+
+export async function countDistinctItems(inventoryId: string, conn: Connection = db): Promise<number> {
+    const [resourceCount] = await conn
+        .select({ n: countDistinct(resourceCollection.resourceId) })
+        .from(resourceCollection)
+        .where(and(eq(resourceCollection.inventoryId, inventoryId), gt(resourceCollection.quantity, 0)));
+    const [equipmentCount] = await conn
+        .select({ n: countDistinct(equipmentCollection.equipmentId) })
+        .from(equipmentCollection)
+        .where(and(eq(equipmentCollection.inventoryId, inventoryId), gt(equipmentCollection.quantity, 0)));
+    return Number(resourceCount?.n ?? 0) + Number(equipmentCount?.n ?? 0);
+}
+
+export async function holdsItem(inventoryId: string, itemType: "resource" | "equipment", itemId: string, conn: Connection = db): Promise<boolean> {
+    const rows = itemType === "resource"
+        ? await conn.select({ id: resourceCollection.resourceId }).from(resourceCollection)
+            .where(and(eq(resourceCollection.inventoryId, inventoryId), eq(resourceCollection.resourceId, itemId), gt(resourceCollection.quantity, 0))).limit(1)
+        : await conn.select({ id: equipmentCollection.equipmentId }).from(equipmentCollection)
+            .where(and(eq(equipmentCollection.inventoryId, inventoryId), eq(equipmentCollection.equipmentId, itemId), gt(equipmentCollection.quantity, 0))).limit(1);
+    return rows.length > 0;
 }
 
 export async function findInventoryByUser(userId: string, conn: Connection = db) {

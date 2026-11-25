@@ -62,7 +62,7 @@ export default function ResourceSelectionCard({selectedRecipe, selectedResources
             />
             <FlatList
                 data={releventResources}
-                keyExtractor={(item) => String(item.quantity + item.resource.id + item.rarity.id)}
+                keyExtractor={(item) => `${item.resource.id}:${item.rarity.id}`}
                 contentContainerStyle={{ gap: 10 }}
                 renderItem={({ item }) => (
                     <Card className={`flex-row items-center gap-1.5 p-2`}

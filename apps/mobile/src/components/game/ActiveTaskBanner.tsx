@@ -39,7 +39,7 @@ export function ActiveTaskBanner() {
             const result = await claimTask();
             if (result.cyclesClaimed === 0) return toast.info("Nothing to claim yet");
             if (result.items.length === 0) return toast.info("No items this claim");
-            toast.success(<ClaimedItemsToast items={result.items} xp={result.xp}/>)
+            toast.success(<ClaimedItemsToast items={result.items} xp={result.xp} overCapacity={result.overCapacity} />)
         } catch (error) {
             refresh("task")
             toast.error(errorMessage(error));

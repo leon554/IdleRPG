@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Modal } from '@/components/primitives/Modal'
 import { Card } from '@/components/primitives/Card'
 import { useStore } from '@/lib/store'
+import { inventoryStore, selectInventoryFull } from '@/stores/inventory'
 import { staticDataStore } from '@/stores/staticData'
 import { statsStore } from '@/stores/stats'
 import { startGatherTask, taskStore } from '@/stores/task'
@@ -25,6 +26,7 @@ export default function GatherModal({openModal, setOpenModal, categoryId, select
     const actions = useStore(staticDataStore, (s) => s.actions);
     const stats = useStore(statsStore, s => s.stats[categoryId])
     const starting = useStore(taskStore, (s) => s.starting)
+    const inventoryFull = useStore(inventoryStore, selectInventoryFull)
     const [progress, setProgress] = useState({
         progress: 0,
         quality: 0,
@@ -139,7 +141,7 @@ export default function GatherModal({openModal, setOpenModal, categoryId, select
                     nestedScrollEnabled
                 >
                     {Object.values(rarities).map((item) => (
-                         <View className='flex-row items-center gap-1.5'>
+                         <View key={item.name} className='flex-row items-center gap-1.5'>
                             <View className='w-3 h-3 rounded-md' style={{backgroundColor: `${item.color}`}}>
 
                             </View>
@@ -207,10 +209,13 @@ export default function GatherModal({openModal, setOpenModal, categoryId, select
                     size='sm'
                     className='w-[67%]'
                     loading={starting}
-                    disabled={starting || usedActions.length === 0}
+                    disabled={starting || inventoryFull || usedActions.length === 0}
                     onPress={start}
                 />
             </View>
+            {inventoryFull && (
+                <Text className="text-danger text-xs text-center">Inventory full: sell items to start a task</Text>
+            )}
         </Modal>
     )
 }

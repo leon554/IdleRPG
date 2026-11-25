@@ -7,6 +7,7 @@ import { Button } from '../../primitives/Button'
 import { TextBox } from '../../primitives/TextBox'
 import { toast } from '../../primitives/Toast'
 import { useStore } from '@/lib/store'
+import { inventoryStore, selectInventoryFull } from '@/stores/inventory'
 import { staticDataStore } from '@/stores/staticData'
 import { statsStore } from '@/stores/stats'
 import { startCraftTask, taskStore } from '@/stores/task'
@@ -29,6 +30,7 @@ export default function RotationSelectionCard({ selectedRecipe, selectedResource
     const actions = useStore(staticDataStore, (s) => s.actions)
     const stats = useStore(statsStore, (s) => s.stats[selectedRecipe.categoryId])
     const starting = useStore(taskStore, (s) => s.starting)
+    const inventoryFull = useStore(inventoryStore, selectInventoryFull)
 
     const totals = useMemo(() => usedActions.reduce(
         (t, a) => ({
@@ -207,10 +209,13 @@ export default function RotationSelectionCard({ selectedRecipe, selectedResource
                     size='sm'
                     className='flex-[2]'
                     loading={starting}
-                    disabled={starting || !progressMet || !craftCount || craftCount > maxCrafts}
+                    disabled={starting || inventoryFull || !progressMet || !craftCount || craftCount > maxCrafts}
                     onPress={start}
                 />
             </View>
+            {inventoryFull && (
+                <Text className="text-danger text-xs text-center">Inventory full: sell items to start a task</Text>
+            )}
         </View>
     )
 }

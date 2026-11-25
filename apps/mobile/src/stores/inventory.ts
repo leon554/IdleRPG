@@ -41,3 +41,7 @@ export const sellStack = async (stack: InventoryStack, quantity: number): Promis
         inventoryStore.setState({ selling: false });
     }
 };
+
+// At or over capacity: no new task can start until items are sold. Use as `useStore(inventoryStore, selectInventoryFull)`.
+export const selectInventoryFull = (s: InventoryState) =>
+    s.inventory !== null && s.inventory.usedSpace >= s.inventory.maxSpace;

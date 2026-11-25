@@ -216,6 +216,7 @@ export type ClaimResult = {
     nextCycleAt: Date;         // when the next cycle completes (the leftover time is kept)
     taskEnded: boolean;        // the claim finished the task and removed it (crafts done, or out of resources)
     xp: number;                // XP added to the task's category by this claim
+    overCapacity: boolean;     // the payout took the inventory over capacity, so the task was stopped
 };
 
 // ── Inventory ─────────────────────────────────────────────────────

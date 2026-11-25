@@ -15,12 +15,18 @@ import type { CraftTarget, RequiredResource, TaskRequirements } from "./task.typ
 type RotationAction = Pick<Action, "progressMultiplier" | "qualityMultiplier" | "yieldMultiplier" | "gatheringPointCost">;
 
 export async function createTask(userId: string, target: TaskTarget, actionIds: string[]) {
+    let outcome;
     try {
-        return await db.transaction(async (tx) => {
+        outcome = await db.transaction(async (tx) => {
             // Same per-user lock as equipping, so gear can't change in a category while a task there is being started
             await lockUser(userId, tx);
             const current = await taskRepo.findTaskByUserForUpdate(userId, tx);
+            // Paying out the running task may overflow; if it does, the claim also stops that task
             const claim = current ? await claimLockedTask(userId, current, tx) : null;
+
+            // A new task can't start with a full inventory. Returned (not thrown) so the payout above still commits.
+            const space = await inventoryService.getSpace(userId, tx);
+            if (space.used >= space.max) return { refused: { ...space, claim } };
 
             const rotation = await loadRotation(actionIds, tx);
 
@@ -39,12 +45,16 @@ export async function createTask(userId: string, target: TaskTarget, actionIds: 
             const inputs = target.type === "craft" ? target.inputs : [];
             await taskRepo.insertTaskRecipeInputs(created.id, inputs, tx);
 
-            return { ...created, actionIds, inputs, claim };
+            return { created: { ...created, actionIds, inputs, claim } };
         });
     } catch (err) {
         if (isUniqueViolation(err, "task_userId_unique")) throw conflict("task_already_active");
         throw err;
     }
+
+    // After the commit: the running task's payout (and its stop, if it overflowed) is kept
+    if ("refused" in outcome) throw conflict("inventory_full", outcome.refused);
+    return outcome.created;
 }
 
 export async function getActiveTask(userId: string): Promise<ActiveTask> {
@@ -86,10 +96,21 @@ export async function claimTask(userId: string): Promise<ClaimResult> {
 
 type LockedTask = NonNullable<Awaited<ReturnType<typeof taskRepo.findTaskByUserForUpdate>>>;
 
+type Payout = Omit<ClaimResult, "overCapacity">;
+
 async function claimLockedTask(userId: string, task: LockedTask, tx: Connection): Promise<ClaimResult> {
-    return task.gatheringGroupId !== null
-        ? claimGatherTask(userId, task, task.gatheringGroupId, tx)
-        : claimCraftTask(userId, task, tx);
+    const payout = task.gatheringGroupId !== null
+        ? await claimGatherTask(userId, task, task.gatheringGroupId, tx)
+        : await claimCraftTask(userId, task, tx);
+
+    // A claim always pays out in full, even past capacity. But an inventory over capacity stops the task,
+    // and no new task can start until space is freed (see createTask).
+    const { used, max } = await inventoryService.getSpace(userId, tx);
+    if (used > max) {
+        if (!payout.taskEnded) await taskRepo.deleteTaskByUser(userId, tx);
+        return { ...payout, taskEnded: true, overCapacity: true };
+    }
+    return { ...payout, overCapacity: false };
 }
 
 function countCycles(lastClaimedAt: Date, cycleMs: number) {
@@ -99,7 +120,7 @@ function countCycles(lastClaimedAt: Date, cycleMs: number) {
     return { cycles, claimedUntil, nextCycleAt };
 }
 
-async function claimGatherTask(userId: string, task: LockedTask, gatheringGroupId: string, tx: Connection): Promise<ClaimResult> {
+async function claimGatherTask(userId: string, task: LockedTask, gatheringGroupId: string, tx: Connection): Promise<Payout> {
     await inventoryService.getOrCreateInventoryId(userId, tx);
 
     const { cycles, claimedUntil, nextCycleAt } = countCycles(task.lastClaimedAt, task.cycleMs);
@@ -156,7 +177,7 @@ async function claimGatherTask(userId: string, task: LockedTask, gatheringGroupI
     return { cyclesClaimed: cycles, successfulCycles, items, nextCycleAt, taskEnded: false, xp: xpEarned };
 }
 
-async function claimCraftTask(userId: string, task: LockedTask, tx: Connection): Promise<ClaimResult> {
+async function claimCraftTask(userId: string, task: LockedTask, tx: Connection): Promise<Payout> {
     const { cycles, claimedUntil, nextCycleAt } = countCycles(task.lastClaimedAt, task.cycleMs);
     if (cycles === 0) return { cyclesClaimed: 0, successfulCycles: 0, items: [], nextCycleAt, taskEnded: false, xp: 0 };
 
@@ -211,7 +232,6 @@ async function claimCraftTask(userId: string, task: LockedTask, tx: Connection):
         craftedByRarity.set(rarityId, (craftedByRarity.get(rarityId) ?? 0) + 1);
     }
 
-    // Each craft makes outputQuantity items at the rarity it rolled
     const made = [...craftedByRarity].map(([rarityId, craftCount]) => ({
         rarityId, craftCount, amount: craftCount * recipe.outputQuantity,
     }));
@@ -221,7 +241,6 @@ async function claimCraftTask(userId: string, task: LockedTask, tx: Connection):
         await inventoryService.addResources(userId, made.map(({ rarityId, amount }) => ({ resourceId: output.item.id, rarityId, amount })), tx);
     }
 
-    // XP per craft (one per cycle), not per item made: the output's tier and the rarity it rolled
     const xpEarned = made.reduce((sum, { rarityId, craftCount }) =>
         sum + calculateXp(xpRate, output.item.tier, rarityById.get(rarityId)!.tier, craftCount), 0);
     await progressService.addXp(userId, recipe.categoryId, xpEarned, tx);
@@ -241,8 +260,6 @@ async function claimCraftTask(userId: string, task: LockedTask, tx: Connection):
 
 type Recipe = NonNullable<Awaited<ReturnType<typeof taskRepo.findRecipe>>>;
 
-// What a recipe makes. `rarityIds` limits the rarities it can roll (equipment: those it has stats for);
-// null = any rarity (resources)
 async function findRecipeOutput(recipe: Recipe, tx: Connection) {
     if (recipe.outputEquipmentId !== null) {
         const item = await taskRepo.findEquipment(recipe.outputEquipmentId, tx);
